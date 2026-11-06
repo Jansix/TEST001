@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { WEATHER_FORECAST } from '../data/tourData';
 import { MapleLeaf, StarSparkle } from './MapleLeafStars';
 import {
@@ -10,11 +10,22 @@ import {
   Umbrella,
   ShieldCheck,
   Compass,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export const WeatherWidget: React.FC = () => {
   const [selectedLocation, setSelectedLocation] = useState<number>(0);
-  const current = WEATHER_FORECAST[selectedLocation];
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const goToLocation = (index: number) => {
+    const container = carouselRef.current;
+    const slide = container?.children[index] as HTMLElement | undefined;
+    if (!container || !slide) return;
+    container.scrollTo({
+      left: container.scrollLeft + slide.getBoundingClientRect().left - container.getBoundingClientRect().left,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+    });
+  };
 
   return (
     <section id="weather" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
@@ -29,31 +40,44 @@ export const WeatherWidget: React.FC = () => {
             </h3>
           </div>
 
-          {/* Location Selector Tabs */}
-          <div className="grid grid-cols-3 gap-1 p-1 bg-[#F3EBF7] rounded-xl w-full lg:w-auto">
-            {WEATHER_FORECAST.map((loc, idx) => (
-              <button
-                key={loc.location}
-                type="button"
-                aria-pressed={selectedLocation === idx}
-                aria-label={loc.location}
-                onClick={() => setSelectedLocation(idx)}
-                className={`min-h-11 flex items-center justify-center px-2 sm:px-4 py-2 text-sm font-medium rounded-lg transition-all duration-150 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7D6895] ${
-                  selectedLocation === idx
-                    ? 'bg-[#6E4B8B] text-white font-bold shadow-xs'
-                    : 'text-[#674F7E] hover:text-[#3A2052] hover:bg-white/50'
-                }`}
-              >
-                {['阿里山', '奮起湖', '故宮南院'][idx] || loc.location}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <button type="button" aria-label="上一個地點" disabled={selectedLocation === 0} onClick={() => goToLocation(selectedLocation - 1)} className="flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] text-[#6E4B8B] disabled:opacity-30"><ChevronLeft className="h-5 w-5" /></button>
+            <button type="button" aria-label="下一個地點" disabled={selectedLocation === WEATHER_FORECAST.length - 1} onClick={() => goToLocation(selectedLocation + 1)} className="flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] text-[#6E4B8B] disabled:opacity-30"><ChevronRight className="h-5 w-5" /></button>
           </div>
         </div>
 
+        <div
+          ref={carouselRef}
+          role="region"
+          aria-roledescription="輪播"
+          aria-label="各地天氣，左右滑動切換"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+              event.preventDefault();
+              goToLocation(Math.max(0, Math.min(WEATHER_FORECAST.length - 1, selectedLocation + (event.key === 'ArrowRight' ? 1 : -1))));
+            }
+          }}
+          onScroll={() => {
+            const container = carouselRef.current;
+            if (!container) return;
+            const left = container.getBoundingClientRect().left;
+            let nearest = 0;
+            let distance = Infinity;
+            Array.from(container.children).forEach((slide, index) => {
+              const delta = Math.abs(slide.getBoundingClientRect().left - left);
+              if (delta < distance) { distance = delta; nearest = index; }
+            });
+            setSelectedLocation(nearest);
+          }}
+          className="weather-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory overscroll-x-contain mt-5 pb-2 rounded-2xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
+        >
+        {WEATHER_FORECAST.map((current, index) => (
+        <article key={current.location} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${WEATHER_FORECAST.length}：${current.location}`} className="min-w-0 shrink-0 basis-[94%] sm:basis-full snap-start snap-always rounded-2xl border border-[#E5D7EE] p-3 sm:p-5">
         {/* Weather Card Content: Luminous & Warm */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
           {/* Main Temperature & Location Badge: Warm Dawn Mist Palette */}
-          <div className="lg:col-span-5 flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] border border-[#DECFEB] text-[#3D2555] shadow-xs relative overflow-hidden">
+          <div className="lg:col-span-5 flex flex-col justify-between p-4 sm:p-7 rounded-2xl bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] border border-[#DECFEB] text-[#3D2555] shadow-xs relative overflow-hidden">
             {/* Watermark leaf */}
             <div className="absolute -right-6 -bottom-6 opacity-20 pointer-events-none">
               <MapleLeaf size={160} color="amber" />
@@ -74,7 +98,7 @@ export const WeatherWidget: React.FC = () => {
                 {current.location}
               </h4>
 
-              <div className="flex items-baseline gap-4 mb-4">
+              <div className="flex flex-wrap items-baseline gap-3 mb-4">
                 <div className="text-5xl sm:text-6xl font-bold font-mono tracking-tight text-[#3A2052] tabular-nums">
                   {current.temp}°
                 </div>
@@ -168,6 +192,16 @@ export const WeatherWidget: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+        </article>
+        ))}
+        </div>
+        <div className="flex items-center justify-center gap-1 mt-2" aria-label="選擇天氣地點">
+          {WEATHER_FORECAST.map((location, index) => (
+            <button key={location.location} type="button" aria-label={`查看${location.location}天氣`} aria-current={selectedLocation === index ? 'true' : undefined} onClick={() => goToLocation(index)} className="flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[#7D6895]">
+              <span className={`h-1.5 rounded-full transition-all ${selectedLocation === index ? 'w-6 bg-[#6E4B8B]' : 'w-1.5 bg-[#D8C6E5]'}`} />
+            </button>
+          ))}
         </div>
       </div>
     </section>
