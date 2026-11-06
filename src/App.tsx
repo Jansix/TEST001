@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { DynamicDashboard } from './components/DynamicDashboard';
@@ -14,6 +14,19 @@ import { EmergencyContacts } from './components/EmergencyContacts';
 import { Footer } from './components/Footer';
 
 export default function App() {
+  useEffect(() => {
+    const arrivalWindow = window as Window & {
+      __arrivalStarted?: number;
+      __dismissArrival?: () => void;
+    };
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const elapsed = performance.now() - (arrivalWindow.__arrivalStarted ?? 0);
+    const timer = window.setTimeout(() => {
+      arrivalWindow.__dismissArrival?.();
+    }, reducedMotion ? 0 : Math.max(0, 1000 - elapsed));
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const scrollToItinerary = () => {
     window.location.hash = 'itinerary';
   };

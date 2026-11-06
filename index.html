@@ -2,6 +2,25 @@
 <html lang="zh-TW" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
+    <style>
+      #arrival-screen{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;overflow:hidden;background:#f9f5fb;color:#432b57;transition:opacity .65s ease,visibility .65s ease}
+      #arrival-screen::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 38%,#f0e6f5 0,transparent 60%),radial-gradient(ellipse at 65% 65%,#f5e9d8 0,transparent 50%);opacity:.8}
+      #arrival-screen.arrival-finished{opacity:0;visibility:hidden;pointer-events:none}
+      .arrival-content{position:relative;text-align:center;padding:32px 24px;width:min(100%,420px);box-sizing:border-box;animation:arrival-rise 1s ease both}
+      .arrival-emblem{width:156px;height:156px;margin:0 auto 32px;position:relative;display:grid;place-items:center}
+      .arrival-emblem::before{content:"";position:absolute;inset:0;border:1px solid #b49ac13d;border-radius:50%}
+      .arrival-emblem::after{content:"✦";position:absolute;top:-10px;left:calc(50% - 10px);width:20px;background:#f7f1fa;color:#bd9457;font-size:18px}
+      .arrival-landscape{width:120px;height:100px}
+      .arrival-kicker{font:10px Georgia,serif;letter-spacing:.35em;color:#947a9f;margin:0 0 16px}
+      .arrival-title{font:500 clamp(23px,6vw,30px)/1.6 'Noto Serif TC',serif;letter-spacing:.12em;margin:0}
+      .arrival-caption{font:12px/1.8 system-ui,sans-serif;letter-spacing:.2em;color:#88728f;margin:14px 0 32px}
+      .arrival-track{width:112px;height:2px;background:#e7ddec;overflow:hidden;margin:0 auto 18px;border-radius:2px}
+      .arrival-track span{display:block;width:45%;height:100%;background:linear-gradient(90deg,transparent,#b38c53,#8b6a9e);animation:arrival-shimmer 1.4s ease-in-out infinite}
+      .arrival-note{font:9px/1.6 Georgia,serif;letter-spacing:.25em;color:#9d899f;margin:0}
+      @keyframes arrival-shimmer{from{transform:translateX(-110%)}to{transform:translateX(330%)}}
+      @keyframes arrival-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+      @media(prefers-reduced-motion:reduce){#arrival-screen{transition:none}.arrival-content,.arrival-track span{animation:none}.arrival-track span{width:100%}}
+    </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>秋季阿里山微奢華兩日遊</title>
     <meta name="description" content="公司年度秋季員工旅遊官方指南：動態同步即時行程儀表板、阿里山高山天氣預報、精選景點與百年阿里山賓館介紹及緊急聯絡支援。" />
@@ -14,6 +33,34 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Serif+TC:wght@400;500;600;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body class="bg-[#FAF8FD] text-slate-800 antialiased selection:bg-purple-200 selection:text-purple-900">
+    <div id="arrival-screen" role="status" aria-label="正在載入旅程">
+      <div class="arrival-content">
+        <div class="arrival-emblem" aria-hidden="true">
+          <svg class="arrival-landscape" viewBox="0 0 120 100" fill="none">
+            <circle cx="77" cy="29" r="12" fill="#D4B17B" opacity=".8"/>
+            <path d="M5 77 39 32 66 67 86 43 115 77Z" fill="#D9CBE3"/>
+            <path d="m5 83 44-41 28 32 17-17 21 26Z" fill="#AB91BE"/>
+            <path d="M5 88c22-26 33-26 52-12 19 14 32-3 58 5v9H5Z" fill="#795C91"/>
+            <path d="M18 92h84" stroke="#C6A26B" stroke-width=".7"/>
+          </svg>
+        </div>
+        <p class="arrival-kicker">AN AUTUMN ESCAPE · ALISHAN</p>
+        <h1 class="arrival-title">山林之間・美好將至</h1>
+        <p class="arrival-caption">秋季阿里山微奢華兩日遊</p>
+        <div class="arrival-track" aria-hidden="true"><span></span></div>
+        <p class="arrival-note">PREPARING YOUR JOURNEY</p>
+      </div>
+    </div>
+    <script>
+      window.__arrivalStarted = performance.now();
+      window.__dismissArrival = function () {
+        var screen = document.getElementById('arrival-screen');
+        if (!screen) return;
+        screen.classList.add('arrival-finished');
+        setTimeout(function () { screen.remove(); }, 700);
+      };
+    </script>
+    <noscript><style>#arrival-screen{display:none}</style>請開啟 JavaScript 以瀏覽旅遊指南。</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
