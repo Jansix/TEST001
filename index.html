@@ -53,9 +53,18 @@
     </div>
     <script>
       window.__arrivalStarted = performance.now();
+      if (performance.getEntriesByType('navigation')[0]?.type === 'reload') {
+        history.scrollRestoration = 'manual';
+        history.replaceState(history.state, '', location.pathname + location.search);
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
       window.__dismissArrival = function () {
         var screen = document.getElementById('arrival-screen');
         if (!screen) return;
+        if (performance.getEntriesByType('navigation')[0]?.type === 'reload') {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          history.scrollRestoration = 'auto';
+        }
         screen.classList.add('arrival-finished');
         setTimeout(function () { screen.remove(); }, 700);
       };

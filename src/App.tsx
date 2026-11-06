@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { ArrowUp } from 'lucide-react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { DynamicDashboard } from './components/DynamicDashboard';
@@ -14,6 +15,14 @@ import { EmergencyContacts } from './components/EmergencyContacts';
 import { Footer } from './components/Footer';
 
 export default function App() {
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  useEffect(() => {
+    const updateScroll = () => setShowBackToTop(window.scrollY > 400);
+    updateScroll();
+    window.addEventListener('scroll', updateScroll, { passive: true });
+    return () => window.removeEventListener('scroll', updateScroll);
+  }, []);
+
   useEffect(() => {
     const arrivalWindow = window as Window & {
       __arrivalStarted?: number;
@@ -48,6 +57,20 @@ export default function App() {
 
       {/* 頁尾 */}
       <Footer />
+      {showBackToTop && (
+        <button
+          type="button"
+          aria-label="回到頂端"
+          onClick={() => {
+            window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+            window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+          }}
+          className="fixed right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[#6E4B8B] text-white shadow-lg border border-white/30 hover:bg-[#553870] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#7D6895]"
+          style={{ bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}
+        >
+          <ArrowUp className="h-5 w-5" />
+        </button>
+      )}
     </div>
   );
 }

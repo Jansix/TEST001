@@ -40,12 +40,9 @@ export const WeatherWidget: React.FC = () => {
             </h3>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button type="button" aria-label="上一個地點" disabled={selectedLocation === 0} onClick={() => goToLocation(selectedLocation - 1)} className="flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] text-[#6E4B8B] disabled:opacity-30"><ChevronLeft className="h-5 w-5" /></button>
-            <button type="button" aria-label="下一個地點" disabled={selectedLocation === WEATHER_FORECAST.length - 1} onClick={() => goToLocation(selectedLocation + 1)} className="flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] text-[#6E4B8B] disabled:opacity-30"><ChevronRight className="h-5 w-5" /></button>
-          </div>
         </div>
 
+        <div className="relative mt-5">
         <div
           ref={carouselRef}
           role="region"
@@ -70,7 +67,7 @@ export const WeatherWidget: React.FC = () => {
             });
             setSelectedLocation(nearest);
           }}
-          className="weather-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory overscroll-x-contain mt-5 pb-2 rounded-2xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
+          className="weather-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory overscroll-x-contain pb-2 rounded-2xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
         >
         {WEATHER_FORECAST.map((current, index) => (
         <article key={current.location} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${WEATHER_FORECAST.length}：${current.location}`} className="min-w-0 shrink-0 basis-[94%] sm:basis-full snap-start snap-always rounded-2xl border border-[#E5D7EE] p-3 sm:p-5">
@@ -117,14 +114,14 @@ export const WeatherWidget: React.FC = () => {
                 <Sunrise className="w-4 h-4 text-[#D97706] shrink-0" />
                 <div>
                   <span className="text-[11px] text-[#7A648F] block">阿里山日出</span>
-                  <span className="font-semibold text-[#3A2052] font-mono">{current.sunrise} AM</span>
+                  <span className="font-semibold text-[#3A2052] font-mono">{current.sunrise}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2 bg-white/60 p-2 rounded-xl border border-[#EADEF2]/70">
                 <Sunset className="w-4 h-4 text-[#E11D48] shrink-0" />
                 <div>
                   <span className="text-[11px] text-[#7A648F] block">高山日落</span>
-                  <span className="font-semibold text-[#3A2052] font-mono">{current.sunset} PM</span>
+                  <span className="font-semibold text-[#3A2052] font-mono">{current.sunset}</span>
                 </div>
               </div>
             </div>
@@ -195,6 +192,11 @@ export const WeatherWidget: React.FC = () => {
         </div>
         </article>
         ))}
+        </div>
+          <div className="pointer-events-none absolute inset-x-0 top-[160px] z-10 flex justify-between -mx-3 sm:-mx-5">
+            <button type="button" aria-label="上一個地點" disabled={selectedLocation === 0} onClick={() => goToLocation(selectedLocation - 1)} className="pointer-events-auto bg-white/95 shadow-md focus-visible:outline-2 focus-visible:outline-[#7D6895] flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] text-[#6E4B8B] disabled:opacity-30"><ChevronLeft className="h-5 w-5" /></button>
+            <button type="button" aria-label="下一個地點" disabled={selectedLocation === WEATHER_FORECAST.length - 1} onClick={() => goToLocation(selectedLocation + 1)} className="pointer-events-auto bg-white/95 shadow-md focus-visible:outline-2 focus-visible:outline-[#7D6895] flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] text-[#6E4B8B] disabled:opacity-30"><ChevronRight className="h-5 w-5" /></button>
+          </div>
         </div>
         <div className="flex items-center justify-center gap-1 mt-2" aria-label="選擇天氣地點">
           {WEATHER_FORECAST.map((location, index) => (
