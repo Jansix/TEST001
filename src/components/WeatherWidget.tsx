@@ -18,9 +18,9 @@ export const WeatherWidget: React.FC = () => {
 
   return (
     <section id="weather" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
-      <div className="bg-gradient-to-b from-[#FCF9FD] via-white to-[#FAF4FB] rounded-3xl border border-[#EADEF2] p-6 sm:p-8 shadow-[0_4px_20px_rgba(90,61,115,0.04)]">
+      <div className="bg-gradient-to-b from-[#FCF9FD] via-white to-[#FAF4FB] rounded-3xl border border-[#EADEF2] p-4 sm:p-8 shadow-[0_4px_20px_rgba(90,61,115,0.04)]">
         {/* Section Header: Clean title "天氣" as requested */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#EADEF2]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#EADEF2]">
           <div>
             <h3 className="text-xl sm:text-2xl font-serif-tc font-bold text-[#3A2052] flex items-center gap-2">
               <span>天氣</span>
@@ -30,18 +30,21 @@ export const WeatherWidget: React.FC = () => {
           </div>
 
           {/* Location Selector Tabs */}
-          <div className="flex items-center gap-1.5 p-1 bg-[#F3EBF7] rounded-xl overflow-x-auto max-w-full">
+          <div className="grid grid-cols-3 gap-1 p-1 bg-[#F3EBF7] rounded-xl w-full lg:w-auto">
             {WEATHER_FORECAST.map((loc, idx) => (
               <button
                 key={loc.location}
+                type="button"
+                aria-pressed={selectedLocation === idx}
+                aria-label={loc.location}
                 onClick={() => setSelectedLocation(idx)}
-                className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 whitespace-nowrap shrink-0 ${
+                className={`min-h-11 flex items-center justify-center px-2 sm:px-4 py-2 text-sm font-medium rounded-lg transition-all duration-150 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7D6895] ${
                   selectedLocation === idx
-                    ? 'bg-white text-[#482D5E] font-bold shadow-xs border border-[#DECFEC]'
+                    ? 'bg-[#6E4B8B] text-white font-bold shadow-xs'
                     : 'text-[#674F7E] hover:text-[#3A2052] hover:bg-white/50'
                 }`}
               >
-                {loc.location.split(' ')[0]}
+                {['阿里山', '奮起湖', '故宮南院'][idx] || loc.location}
               </button>
             ))}
           </div>
