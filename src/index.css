@@ -75,3 +75,17 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #B48ED0;
 }
+
+/* Keep anchor headings visible beneath the sticky header. */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 132px;
+}
+
+@media (min-width: 768px) {
+  html { scroll-padding-top: 80px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
