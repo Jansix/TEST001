@@ -13,7 +13,7 @@ export const TravelInfo: React.FC = () => {
   return (
     <section id="info" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
       {/* Section Header: Clean title "旅遊資訊" */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 pb-6 border-b border-[#EADEF2]">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5 pb-4 border-b border-[#EADEF2]">
         <div>
           <h2 className="text-2xl sm:text-3xl font-serif-tc font-bold text-[#3A2052] flex items-center gap-2">
             <span>旅遊資訊</span>
@@ -22,41 +22,47 @@ export const TravelInfo: React.FC = () => {
         </div>
 
         {/* 3 Dedicated Section Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-[#F4ECF8] rounded-xl overflow-x-auto max-w-full border border-[#E5D7EE]">
+        <div className="grid grid-cols-3 gap-1 p-1 bg-[#F4ECF8] rounded-xl w-full md:w-auto border border-[#E5D7EE]">
           <button
+            type="button"
             onClick={() => setActiveSubTab('reminders')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-150 whitespace-nowrap ${
+            aria-pressed={activeSubTab === 'reminders'}
+            className={`flex min-h-11 items-center justify-center gap-1.5 px-2 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-150 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7D6895] ${
               activeSubTab === 'reminders'
-                ? 'bg-white text-[#4A2D62] shadow-2xs border border-[#DECFEC]'
+                ? 'bg-[#6E4B8B] text-white shadow-xs'
                 : 'text-[#6F5786] hover:text-[#3A2052] hover:bg-white/50'
             }`}
           >
-            <BellRing className="w-4 h-4 text-[#7E579B]" />
-            <span>溫馨提醒</span>
+            <BellRing className="w-4 h-4 shrink-0" />
+            <span>行前提醒</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveSubTab('hotel')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-150 whitespace-nowrap ${
+            aria-pressed={activeSubTab === 'hotel'}
+            className={`flex min-h-11 items-center justify-center gap-1.5 px-2 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-150 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7D6895] ${
               activeSubTab === 'hotel'
-                ? 'bg-white text-[#4A2D62] shadow-2xs border border-[#DECFEC]'
+                ? 'bg-[#6E4B8B] text-white shadow-xs'
                 : 'text-[#6F5786] hover:text-[#3A2052] hover:bg-white/50'
             }`}
           >
-            <Hotel className="w-4 h-4 text-[#7E579B]" />
-            <span>飯店資訊 (阿里山賓館)</span>
+            <Hotel className="w-4 h-4 shrink-0" />
+            <span>飯店資訊</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveSubTab('attractions')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-150 whitespace-nowrap ${
+            aria-pressed={activeSubTab === 'attractions'}
+            className={`flex min-h-11 items-center justify-center gap-1.5 px-2 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-150 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7D6895] ${
               activeSubTab === 'attractions'
-                ? 'bg-white text-[#4A2D62] shadow-2xs border border-[#DECFEC]'
+                ? 'bg-[#6E4B8B] text-white shadow-xs'
                 : 'text-[#6F5786] hover:text-[#3A2052] hover:bg-white/50'
             }`}
           >
-            <Compass className="w-4 h-4 text-[#7E579B]" />
-            <span>景點介紹 (小火車/日出/故宮)</span>
+            <Compass className="w-4 h-4 shrink-0" />
+            <span>景點介紹</span>
           </button>
         </div>
       </div>
