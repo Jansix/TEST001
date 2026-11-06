@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { HOTEL_INFO, ATTRACTIONS } from '../data/tourData';
 import { MapleLeaf, StarSparkle } from './MapleLeafStars';
 import {
   BellRing,
   Hotel,
   Compass,
+  Plus,
+  Minus,
 } from 'lucide-react';
 
 export const TravelInfo: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'reminders' | 'hotel' | 'attractions'>('reminders');
-
   return (
     <section id="info" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
       {/* Section Header: Clean title "旅遊資訊" */}
@@ -21,54 +21,17 @@ export const TravelInfo: React.FC = () => {
           </h2>
         </div>
 
-        {/* 3 Dedicated Section Tabs */}
-        <div className="grid grid-cols-3 gap-1 p-1 bg-[#F4ECF8] rounded-xl w-full md:w-auto border border-[#E5D7EE]">
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('reminders')}
-            aria-pressed={activeSubTab === 'reminders'}
-            className={`flex min-h-11 items-center justify-center gap-1.5 px-2 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-150 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7D6895] ${
-              activeSubTab === 'reminders'
-                ? 'bg-[#6E4B8B] text-white shadow-xs'
-                : 'text-[#6F5786] hover:text-[#3A2052] hover:bg-white/50'
-            }`}
-          >
-            <BellRing className="w-4 h-4 shrink-0" />
-            <span>行前提醒</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('hotel')}
-            aria-pressed={activeSubTab === 'hotel'}
-            className={`flex min-h-11 items-center justify-center gap-1.5 px-2 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-150 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7D6895] ${
-              activeSubTab === 'hotel'
-                ? 'bg-[#6E4B8B] text-white shadow-xs'
-                : 'text-[#6F5786] hover:text-[#3A2052] hover:bg-white/50'
-            }`}
-          >
-            <Hotel className="w-4 h-4 shrink-0" />
-            <span>飯店資訊</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('attractions')}
-            aria-pressed={activeSubTab === 'attractions'}
-            className={`flex min-h-11 items-center justify-center gap-1.5 px-2 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-150 whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7D6895] ${
-              activeSubTab === 'attractions'
-                ? 'bg-[#6E4B8B] text-white shadow-xs'
-                : 'text-[#6F5786] hover:text-[#3A2052] hover:bg-white/50'
-            }`}
-          >
-            <Compass className="w-4 h-4 shrink-0" />
-            <span>景點介紹</span>
-          </button>
-        </div>
       </div>
 
       {/* SUB-SECTION 1: 溫馨提醒 (條列式，無「建議」字眼) */}
-      {activeSubTab === 'reminders' && (
+      <details open className="group/info mb-4 rounded-2xl border border-[#E2D2ED] bg-white/70 overflow-hidden">
+        <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-4 sm:px-6 py-4 text-base font-semibold text-[#3A2052] hover:bg-[#F4ECF8] focus-visible:outline-2 focus-visible:outline-[#7D6895] [&::-webkit-details-marker]:hidden">
+          <BellRing className="h-5 w-5 text-[#7E579B] shrink-0" />
+          <span className="flex-1">行前提醒</span>
+          <Plus className="h-5 w-5 group-open/info:hidden" />
+          <Minus className="hidden h-5 w-5 group-open/info:block" />
+        </summary>
+        <div className="border-t border-[#EADEF2] p-3 sm:p-4">
         <div className="animate-in fade-in duration-200">
           <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-[#FAF4FC] via-white to-[#F8F0FA] border border-[#E2D2ED] shadow-[0_4px_20px_rgba(90,61,115,0.04)]">
             <h3 className="text-lg font-serif-tc font-bold text-[#3A2052] mb-6 flex items-center gap-2">
@@ -97,16 +60,25 @@ export const TravelInfo: React.FC = () => {
             </ul>
           </div>
         </div>
-      )}
+        </div>
+      </details>
 
       {/* SUB-SECTION 2: 飯店資訊 (阿里山賓館) */}
-      {activeSubTab === 'hotel' && (
+      <details  className="group/info mb-4 rounded-2xl border border-[#E2D2ED] bg-white/70 overflow-hidden">
+        <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-4 sm:px-6 py-4 text-base font-semibold text-[#3A2052] hover:bg-[#F4ECF8] focus-visible:outline-2 focus-visible:outline-[#7D6895] [&::-webkit-details-marker]:hidden">
+          <Hotel className="h-5 w-5 text-[#7E579B] shrink-0" />
+          <span className="flex-1">飯店資訊</span>
+          <Plus className="h-5 w-5 group-open/info:hidden" />
+          <Minus className="hidden h-5 w-5 group-open/info:block" />
+        </summary>
+        <div className="border-t border-[#EADEF2] p-3 sm:p-4">
         <div className="animate-in fade-in duration-200">
           <div className="rounded-3xl overflow-hidden border border-[#E2D2ED] shadow-[0_4px_24px_rgba(90,61,115,0.05)] bg-white">
             <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
               {/* Hotel Image Card */}
               <div className="lg:col-span-6 relative h-72 sm:h-96 overflow-hidden bg-[#FAF4FC]">
                 <img
+                  loading="lazy"
                   src={HOTEL_INFO.image}
                   alt={HOTEL_INFO.name}
                   className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-500"
@@ -139,10 +111,18 @@ export const TravelInfo: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+        </div>
+      </details>
 
       {/* SUB-SECTION 3: 景點介紹 (阿里山小火車/奮起湖、玉山觀日、故宮南院等) */}
-      {activeSubTab === 'attractions' && (
+      <details  className="group/info mb-4 rounded-2xl border border-[#E2D2ED] bg-white/70 overflow-hidden">
+        <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-4 sm:px-6 py-4 text-base font-semibold text-[#3A2052] hover:bg-[#F4ECF8] focus-visible:outline-2 focus-visible:outline-[#7D6895] [&::-webkit-details-marker]:hidden">
+          <Compass className="h-5 w-5 text-[#7E579B] shrink-0" />
+          <span className="flex-1">景點介紹</span>
+          <Plus className="h-5 w-5 group-open/info:hidden" />
+          <Minus className="hidden h-5 w-5 group-open/info:block" />
+        </summary>
+        <div className="border-t border-[#EADEF2] p-3 sm:p-4">
         <div className="space-y-8 animate-in fade-in duration-200">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {ATTRACTIONS.map((attraction) => (
@@ -154,6 +134,7 @@ export const TravelInfo: React.FC = () => {
                   {/* Photo */}
                   <div className="relative h-56 sm:h-64 overflow-hidden bg-[#FAF4FC]">
                     <img
+                      loading="lazy"
                       src={attraction.image}
                       alt={attraction.title}
                       className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
@@ -205,7 +186,8 @@ export const TravelInfo: React.FC = () => {
             ))}
           </div>
         </div>
-      )}
+        </div>
+      </details>
     </section>
   );
 };

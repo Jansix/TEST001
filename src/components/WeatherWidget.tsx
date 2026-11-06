@@ -42,6 +42,8 @@ export const WeatherWidget: React.FC = () => {
 
         </div>
 
+        <p className="mt-3 text-xs leading-relaxed text-[#735A8B]">天氣參考資料・非即時預報。出發前請確認最新天氣，山區天候以現場為準。</p>
+
         <div className="relative mt-5">
         <div
           ref={carouselRef}

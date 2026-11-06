@@ -61,9 +61,11 @@ export const DailyItinerary: React.FC = () => {
       aria-checked={allExpanded}
       aria-label="展開全部行程說明"
       onClick={() => setExpandedIds(allExpanded ? new Set() : new Set(detailIds))}
-      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#7D6895] ${allExpanded ? 'bg-[#7D6895] border-[#7D6895]' : 'bg-[#EDE4F3] border-[#D8C6E5]'}`}
+      className="inline-flex h-12 w-14 shrink-0 items-center justify-center rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7D6895]"
     >
-      <span className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${allExpanded ? 'translate-x-6' : 'translate-x-0.5'}`} />
+      <span aria-hidden="true" className={`relative inline-flex h-7 w-12 items-center rounded-full border transition-colors ${allExpanded ? 'bg-[#7D6895] border-[#7D6895]' : 'bg-[#EDE4F3] border-[#D8C6E5]'}`}>
+        <span className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${allExpanded ? 'translate-x-6' : 'translate-x-0.5'}`} />
+      </span>
     </button>
   );
 
