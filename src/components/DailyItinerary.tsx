@@ -19,13 +19,18 @@ import {
 
 export const DailyItinerary: React.FC = () => {
   const [activeView, setActiveView] = useState<'d1' | 'd2'>('d1');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
   const day1Items = SCHEDULE_ITEMS.filter((item) => item.day === 1);
   const day2Items = SCHEDULE_ITEMS.filter((item) => item.day === 2);
 
   const toggleExpand = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
+    setExpandedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   // Icon selector based on activity type for authentic poster styling
@@ -49,11 +54,11 @@ export const DailyItinerary: React.FC = () => {
   const renderTimelineList = (items: ScheduleItem[]) => (
     <div className="space-y-3.5 relative">
       {/* Delicate vertical timeline guide line */}
-      <div className="absolute left-[54px] sm:left-[60px] top-6 bottom-6 w-[1.5px] bg-gradient-to-b from-[#E2D4EB] via-[#DBC9E5] to-[#E2D4EB] pointer-events-none" />
+      <div className="absolute left-[63px] sm:left-[82px] top-6 bottom-6 w-[1.5px] bg-gradient-to-b from-[#E2D4EB] via-[#DBC9E5] to-[#E2D4EB] pointer-events-none" />
 
       {items.map((item) => {
         const hasDetails = Boolean(item.detailNote);
-        const isExpanded = hasDetails && expandedId === item.id;
+        const isExpanded = hasDetails && expandedIds.has(item.id);
 
         return (
           <div
@@ -67,28 +72,28 @@ export const DailyItinerary: React.FC = () => {
             {/* Timeline Row */}
             <div
               onClick={() => hasDetails && toggleExpand(item.id)}
-              className={`p-3.5 sm:p-4 flex items-start sm:items-center justify-between gap-3 select-none ${
+              className={`p-3.5 sm:p-4 flex items-start sm:items-center justify-between gap-2 sm:gap-3 select-none ${
                 hasDetails ? 'cursor-pointer hover:bg-[#FAF4FC]/60' : 'cursor-default'
               }`}
             >
               {/* Left Column: Time Pill + Icon + Activity Details */}
-              <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1">
+              <div className="flex items-start sm:items-center gap-2 sm:gap-4 flex-1 min-w-0">
                 {/* Time Pill matching reference poster */}
-                <div className="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-[#EFE7F6] text-[#553B70] text-xs font-semibold font-mono whitespace-nowrap min-w-[80px] sm:min-w-[92px] border border-[#DECFEC]/60 shrink-0 shadow-2xs">
+                <div className="inline-flex items-center justify-center px-1 sm:px-3 py-1.5 rounded-full bg-[#EFE7F6] text-[#553B70] text-[10px] sm:text-xs font-semibold font-mono tabular-nums whitespace-nowrap w-[100px] sm:w-[132px] border border-[#DECFEC]/60 shrink-0 shadow-2xs">
                   {item.timeRange}
                 </div>
 
                 {/* Activity Icon */}
-                <div className="w-8 h-8 rounded-full bg-[#FAF3FC] border border-[#EADEF2] flex items-center justify-center shrink-0">
+                <div className="hidden sm:flex w-8 h-8 rounded-full bg-[#FAF3FC] border border-[#EADEF2] items-center justify-center shrink-0">
                   {getItemIcon(item)}
                 </div>
 
                 {/* Activity Name & Location */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 flex-1 min-w-0">
-                  <span className="text-sm sm:text-base font-bold text-[#351D4A] font-serif-tc truncate">
+                <div className="flex flex-col gap-1 flex-1 min-w-0">
+                  <span className="text-sm sm:text-base font-bold text-[#351D4A] font-serif-tc break-words">
                     {item.activity}
                   </span>
-                  <span className="flex items-center gap-1 text-xs text-[#7B668F] shrink-0">
+                  <span className="flex items-center gap-1 text-xs text-[#7B668F]">
                     <MapPin className="w-3 h-3 text-[#A855F7]" />
                     {item.location}
                   </span>
@@ -158,6 +163,15 @@ export const DailyItinerary: React.FC = () => {
 
       </div>
 
+      <div className="max-w-4xl mx-auto flex justify-end gap-2 mb-4">
+        <button type="button" onClick={() => setExpandedIds(new Set(SCHEDULE_ITEMS.filter((item) => item.detailNote).map((item) => item.id)))} className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-[#553B70] bg-white border border-[#E0D1EC] rounded-lg hover:bg-[#F4ECF8]">
+          <ChevronDown className="w-3.5 h-3.5" />全部展開
+        </button>
+        <button type="button" onClick={() => setExpandedIds(new Set())} className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-[#553B70] bg-white border border-[#E0D1EC] rounded-lg hover:bg-[#F4ECF8]">
+          <ChevronUp className="w-3.5 h-3.5" />全部收起
+        </button>
+      </div>
+
       <div role="tablist" aria-label="選擇行程日期" className="flex w-fit mx-auto items-center gap-1 p-1 mb-6 bg-[#F4ECF8] rounded-xl border border-[#E5D7EE]">
         {(['d1', 'd2'] as const).map((day, index) => (
           <button
@@ -168,13 +182,13 @@ export const DailyItinerary: React.FC = () => {
             aria-selected={activeView === day}
             aria-controls={`itinerary-panel-${day}`}
             tabIndex={activeView === day ? 0 : -1}
-            onClick={() => { setActiveView(day); setExpandedId(null); }}
+            onClick={() => { setActiveView(day); }}
             onKeyDown={(event) => {
               if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
                 event.preventDefault();
                 const nextDay = event.key === 'Home' ? 'd1' : event.key === 'End' ? 'd2' : day === 'd1' ? 'd2' : 'd1';
                 setActiveView(nextDay);
-                setExpandedId(null);
+
                 document.getElementById(`itinerary-tab-${nextDay}`)?.focus();
               }
             }}

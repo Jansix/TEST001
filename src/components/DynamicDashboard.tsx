@@ -12,8 +12,6 @@ import {
   MapPin,
   Utensils,
   Sparkles,
-  SlidersHorizontal,
-  RotateCcw,
 } from 'lucide-react';
 
 interface DynamicDashboardProps {
@@ -25,10 +23,6 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
 }) => {
   // Real device time synchronized every second
   const [deviceTime, setDeviceTime] = useState<Date>(new Date());
-  // Optional preview override for testing the during/after states
-  const [simulatedTime, setSimulatedTime] = useState<Date | null>(null);
-  const [showSimControls, setShowSimControls] = useState<boolean>(false);
-
   useEffect(() => {
     const timer = setInterval(() => {
       setDeviceTime(new Date());
@@ -36,7 +30,7 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  const activeTime = simulatedTime || deviceTime;
+  const activeTime = deviceTime;
 
   // Tour start & end timestamps
   const tripStartTime = new Date(TOUR_META.startDateIso).getTime();
@@ -92,121 +86,10 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
   const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
   const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
 
-  // Formatter for readable device time
-  const formatDateTime = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const daysArr = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
-    const weekday = daysArr[date.getDay()];
-    const hoursStr = String(date.getHours()).padStart(2, '0');
-    const minStr = String(date.getMinutes()).padStart(2, '0');
-    const secStr = String(date.getSeconds()).padStart(2, '0');
-    return `${year}年${month}月${day}日 (${weekday}) ${hoursStr}:${minStr}:${secStr}`;
-  };
-
   return (
     <section id="dashboard" className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 sm:-mt-10 z-20">
       {/* Outer Card Container: Warm, Pearlescent White with Lilac Border */}
       <div className="bg-white rounded-3xl shadow-[0_4px_24px_rgba(90,61,115,0.06)] border border-[#EADEF2] overflow-hidden">
-        {/* Top Synchronized Clock Bar: Luminous, warm pastel lavender tone */}
-        <div className="bg-gradient-to-r from-[#F4EDF8] via-[#FAF4FD] to-[#F4EDF8] text-[#3D2555] px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm border-b border-[#E8DCF0]">
-          <div className="flex items-center gap-2 font-mono">
-            <Clock className="w-4 h-4 text-[#D97706] animate-pulse" />
-            <span className="text-[#6E5684]">裝置同步時間：</span>
-            <span className="font-semibold text-[#3D2555] tracking-wide">
-              {formatDateTime(activeTime)}
-            </span>
-            {simulatedTime && (
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] font-bold border border-[#FDE68A] ml-1">
-                模擬預覽中
-              </span>
-            )}
-          </div>
-
-          {/* Time simulation toggles */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowSimControls(!showSimControls)}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white hover:bg-[#F8F2FC] text-[#553B70] text-xs font-medium border border-[#DFCFEB] transition-colors shadow-2xs"
-              title="測試不同時間點的行程儀表板狀態"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-[#D97706]" />
-              <span>{showSimControls ? '收合時間測試' : '時間模擬切換'}</span>
-            </button>
-            {simulatedTime && (
-              <button
-                onClick={() => setSimulatedTime(null)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#EFE7F6] hover:bg-[#E7DBF0] text-[#553B70] text-xs transition-colors"
-                title="回到真實手機/電腦時間"
-              >
-                <RotateCcw className="w-3 h-3 text-[#795B94]" />
-                <span>重置時間</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Simulation Bar (Expandable) */}
-        {showSimControls && (
-          <div className="bg-[#FAF5FB] border-b border-[#E8DCF0] px-4 sm:px-6 py-3 text-xs text-[#523A68] flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-[#3D2555] flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-[#885BAA]" />
-              快速切換時間體驗：
-            </span>
-            <button
-              onClick={() => setSimulatedTime(null)}
-              className={`px-3 py-1 rounded-md transition-colors ${
-                !simulatedTime
-                  ? 'bg-[#6C4989] text-white font-semibold shadow-xs'
-                  : 'bg-white border border-[#DFCFEB] text-[#553B70] hover:bg-[#F4ECF8]'
-              }`}
-            >
-              真實裝置時間 (未出發)
-            </button>
-            <button
-              onClick={() => setSimulatedTime(new Date('2026-11-14T11:45:00+08:00'))}
-              className={`px-3 py-1 rounded-md transition-colors ${
-                simulatedTime?.toISOString() === new Date('2026-11-14T11:45:00+08:00').toISOString()
-                  ? 'bg-[#6C4989] text-white font-semibold shadow-xs'
-                  : 'bg-white border border-[#DFCFEB] text-[#553B70] hover:bg-[#F4ECF8]'
-              }`}
-            >
-              11/14 11:45 奮起湖午餐中
-            </button>
-            <button
-              onClick={() => setSimulatedTime(new Date('2026-11-14T16:20:00+08:00'))}
-              className={`px-3 py-1 rounded-md transition-colors ${
-                simulatedTime?.toISOString() === new Date('2026-11-14T16:20:00+08:00').toISOString()
-                  ? 'bg-[#6C4989] text-white font-semibold shadow-xs'
-                  : 'bg-white border border-[#DFCFEB] text-[#553B70] hover:bg-[#F4ECF8]'
-              }`}
-            >
-              11/14 16:20 阿里山森林浴中
-            </button>
-            <button
-              onClick={() => setSimulatedTime(new Date('2026-11-15T05:30:00+08:00'))}
-              className={`px-3 py-1 rounded-md transition-colors ${
-                simulatedTime?.toISOString() === new Date('2026-11-15T05:30:00+08:00').toISOString()
-                  ? 'bg-[#6C4989] text-white font-semibold shadow-xs'
-                  : 'bg-white border border-[#DFCFEB] text-[#553B70] hover:bg-[#F4ECF8]'
-              }`}
-            >
-              11/15 05:30 玉山觀日出中
-            </button>
-            <button
-              onClick={() => setSimulatedTime(new Date('2026-11-15T21:00:00+08:00'))}
-              className={`px-3 py-1 rounded-md transition-colors ${
-                simulatedTime?.toISOString() === new Date('2026-11-15T21:00:00+08:00').toISOString()
-                  ? 'bg-[#6C4989] text-white font-semibold shadow-xs'
-                  : 'bg-white border border-[#DFCFEB] text-[#553B70] hover:bg-[#F4ECF8]'
-              }`}
-            >
-              11/15 21:00 旅程已結束
-            </button>
-          </div>
-        )}
-
         {/* Dashboard Content per Status */}
         <div className="p-6 sm:p-8 lg:p-10 bg-gradient-to-b from-white to-[#FCF9FD]">
           {/* STATE 1: BEFORE TRIP (< 11/14 06:40) */}
