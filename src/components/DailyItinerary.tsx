@@ -51,6 +51,22 @@ export const DailyItinerary: React.FC = () => {
     return <Mountain className="w-4 h-4 text-[#8A5DA8]" />;
   };
 
+  const detailIds = SCHEDULE_ITEMS.filter((item) => item.detailNote).map((item) => item.id);
+  const allExpanded = detailIds.every((id) => expandedIds.has(id));
+
+  const renderExpandSwitch = () => (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={allExpanded}
+      aria-label="展開全部行程說明"
+      onClick={() => setExpandedIds(allExpanded ? new Set() : new Set(detailIds))}
+      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#7D6895] ${allExpanded ? 'bg-[#7D6895] border-[#7D6895]' : 'bg-[#EDE4F3] border-[#D8C6E5]'}`}
+    >
+      <span className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${allExpanded ? 'translate-x-6' : 'translate-x-0.5'}`} />
+    </button>
+  );
+
   const renderTimelineList = (items: ScheduleItem[]) => (
     <div className="space-y-3.5 relative">
       {/* Delicate vertical timeline guide line */}
@@ -163,15 +179,6 @@ export const DailyItinerary: React.FC = () => {
 
       </div>
 
-      <div className="max-w-4xl mx-auto flex justify-end gap-2 mb-4">
-        <button type="button" onClick={() => setExpandedIds(new Set(SCHEDULE_ITEMS.filter((item) => item.detailNote).map((item) => item.id)))} className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-[#553B70] bg-white border border-[#E0D1EC] rounded-lg hover:bg-[#F4ECF8]">
-          <ChevronDown className="w-3.5 h-3.5" />全部展開
-        </button>
-        <button type="button" onClick={() => setExpandedIds(new Set())} className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-[#553B70] bg-white border border-[#E0D1EC] rounded-lg hover:bg-[#F4ECF8]">
-          <ChevronUp className="w-3.5 h-3.5" />全部收起
-        </button>
-      </div>
-
       <div role="tablist" aria-label="選擇行程日期" className="flex w-fit mx-auto items-center gap-1 p-1 mb-6 bg-[#F4ECF8] rounded-xl border border-[#E5D7EE]">
         {(['d1', 'd2'] as const).map((day, index) => (
           <button
@@ -213,7 +220,7 @@ export const DailyItinerary: React.FC = () => {
                 <span className="text-[9px] uppercase tracking-wider font-sans font-bold leading-none">DAY</span>
                 <span className="text-lg font-bold leading-none mt-0.5">1</span>
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <h3 className="text-base sm:text-lg font-serif-tc font-bold text-[#351D4A]">
                   11/14 (六) 台北→嘉義→奮起湖→阿里山
                 </h3>
@@ -221,6 +228,7 @@ export const DailyItinerary: React.FC = () => {
                   首日精選：奮起湖山城老街、鐵道便當、阿里山森林浴與微奢華入住
                 </span>
               </div>
+              {renderExpandSwitch()}
             </div>
 
             {/* Day 1 List */}
@@ -243,7 +251,7 @@ export const DailyItinerary: React.FC = () => {
                 <span className="text-[9px] uppercase tracking-wider font-sans font-bold leading-none">DAY</span>
                 <span className="text-lg font-bold leading-none mt-0.5">2</span>
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <h3 className="text-base sm:text-lg font-serif-tc font-bold text-[#351D4A]">
                   11/15 (日) 阿里山 → 玉山觀日 → 達娜伊谷 → 故宮南院 → 台北
                 </h3>
@@ -251,6 +259,7 @@ export const DailyItinerary: React.FC = () => {
                   次日精選：玉山浩瀚日出、鄒族風味饗宴、國立故宮南院水墨藝術
                 </span>
               </div>
+              {renderExpandSwitch()}
             </div>
 
             {/* Day 2 List */}
