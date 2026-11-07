@@ -1,41 +1,78 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# 秋季阿里山微奢華兩日遊
 
-# Run and deploy your AI Studio app
+以手機瀏覽為主要情境的一頁式旅遊指南，為 2026 年 11 月 14 日至 15 日的阿里山員工旅遊整合行程、天氣、住宿、景點與緊急聯絡資訊。
 
-This contains everything you need to run your app locally.
+[瀏覽網站](https://test-001-kappa.vercel.app/)
 
-View your app in AI Studio: https://ai.studio/apps/34b72068-9963-4f1a-b716-79fea77606db
+## 網站目的
 
-## Run Locally
+讓參與者在出發前快速掌握準備事項，在旅途中隨時查詢當日行程、出發時間、目的地天氣與領隊電話。透過清楚的資訊層次和適合手機操作的介面，減少翻找文件與反覆詢問的時間。
 
-**Prerequisites:**  Node.js
+視覺以秋季山林為主題，結合淡紫與暖金色調、森林風景、楓葉飄落及細緻動態效果，呈現輕奢、放鬆的旅遊氛圍。
 
+## 技術棧
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+| 類別 | 技術 | 用途 |
+| --- | --- | --- |
+| 前端 | React 19、TypeScript | 元件化介面、互動狀態與型別管理 |
+| 開發與建置 | Vite 8、React Plugin | 本機開發及正式版資源建置 |
+| 樣式 | Tailwind CSS 4、CSS | 響應式版面、毛玻璃頁首與視覺細節 |
+| 圖示 | Lucide React、自訂 SVG | 導覽、天氣、行程圖示與背景裝飾 |
+| 動畫與手勢 | CSS Animations、Web Animations API、Pointer Events | 區塊入場、楓葉飄落與可循環甩動的天氣卡片 |
+| 後端 | Vercel Functions、Node.js | 代理氣象署 API、保護授權碼與快取預報 |
+| 天氣來源 | 中央氣象署開放資料 API | 阿里山森林遊樂區與嘉義縣鄉鎮天氣預報 |
+| 部署與版本管理 | Vercel、GitHub | 原始碼管理與正式網站部署 |
+| 驗證 | TypeScript、Node.js Test Runner、tsx | 型別檢查與天氣資料解析測試 |
 
-## Official weather on Vercel
+## 主要功能
 
-The server route `/api/weather` reads `CWA_API_KEY` from Vercel's server environment.
-Configure it in Project Settings > Environment Variables for Production, then deploy.
-Do not prefix this secret with `VITE_`, commit it, or include it in client code.
+- **一頁式導覽**：錨點跳轉、目前區塊指示、半透明固定頁首及回到頂端按鈕。
+- **旅程動態資訊**：依時間呈現出發倒數、旅途中行程與旅程結束狀態。
+- **每日行程**：DAY1／DAY2 日期切換、活動詳情展開與全部展開／收起。
+- **天氣卡片**：三地天氣、圖片卡堆、左右傾斜甩動、雙向循環與自動輪播；手動操作後停止自動播放。
+- **旅遊資訊**：行前提醒、飯店與景點圖文預覽，以及可展開的詳細介紹。
+- **緊急聯絡**：領隊電話直撥與號碼複製。
+- **動態與無障礙支援**：鍵盤操作、互動元件語意標示，以及減少動態效果設定。
 
-Data sources: CWA `F-B0053-059` (Alishan forest recreation forecast) and
-`F-D0047-029` (Chiayi County township forecasts). Fenqihu explicitly uses the
-Zhuqi township representative point; Southern Branch uses Taibao City.
-The UI shows current available forecast periods, not guaranteed trip-date forecasts
-or live station observations. Missing UV/sunrise/sunset values are not synthesized.
-Responses are cached for 15 minutes. A warm function can serve a marked stale
-response for up to 6 hours on upstream failure; cold starts may have no fallback.
-Local Vite alone does not run Vercel Functions; use Vercel preview deployments
-(or Vercel CLI development) to exercise the complete route.
+## 天氣資料與備援
 
-If no successful official response exists and the API fails, the client displays
-the original static trip weather estimates with a visible non-live reference badge
-on every card. These estimates have no official update time or forecast period.
-A previous successful response remains preferred over static estimates on retry failure.
+後端透過 `/api/weather` 取得中央氣象署資料：
+
+- `F-B0053-059`：阿里山國家森林遊樂區專用預報。
+- `F-D0047-029`：嘉義縣鄉鎮預報；奮起湖採竹崎鄉區域預報，故宮南院採太保市預報。
+
+卡片直接標示預報地點、有效時段與溫度時點。鄉鎮代表點不等於景點現場觀測，奮起湖卡片另有山區溫度差異提醒。
+
+成功資料快取 15 分鐘；上游服務失敗時，仍保有快取的函式實例可回傳 6 小時內的舊資料並標示狀態。若前端沒有可用的官方資料，則顯示原本的靜態預估天氣，清楚標示「預估參考・非即時資訊」。
+
+## 本機開發
+
+建議使用 Node.js 22.12 以上版本。
+
+```bash
+npm install
+npm run dev
+```
+
+```bash
+# 型別檢查
+npx tsc --noEmit
+
+# 天氣資料解析測試
+npx tsx --test lib/cwa-weather.test.ts
+
+# 正式版建置
+npm run build
+```
+
+本機 Vite 開發伺服器不執行 Vercel Functions。完整 API 串接可透過 Vercel 部署環境，或 Vercel CLI 的開發環境驗證；本機無法取得 API 時會呈現預估天氣備援。
+
+## 環境變數
+
+在 Vercel 專案的 **Settings → Environment Variables** 設定伺服器端秘密變數：
+
+| 名稱 | 用途 |
+| --- | --- |
+| `CWA_API_KEY` | 中央氣象署開放資料 API 授權碼 |
+
+授權碼僅供後端使用，不使用 `VITE_` 前綴，也不應提交至 GitHub。修改環境變數後，需要重新部署才能生效。
