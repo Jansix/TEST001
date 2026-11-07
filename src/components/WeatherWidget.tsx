@@ -1,10 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { WEATHER_FORECAST } from '../data/tourData';
 import { MapleLeaf, StarSparkle } from './MapleLeafStars';
 import {
   Sun,
-  Sunrise,
-  Sunset,
   Droplets,
   Wind,
   Umbrella,
@@ -15,6 +13,36 @@ import {
 } from 'lucide-react';
 
 export const WeatherWidget: React.FC = () => {
+  type LiveWeather = { locations: (Partial<(typeof WEATHER_FORECAST)[number]> & {forecastLocation: string; validFrom: string; validTo: string; temperatureTime: string})[]; fetchedAt: string; stale: boolean };
+  const [weather, setWeather] = useState<LiveWeather | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 18000);
+    let active = true;
+    setLoading(true);
+    setError(false);
+    fetch('/api/weather', { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Unavailable');
+        const result = await response.json();
+        if (!Array.isArray(result.locations) || result.locations.length !== 3 || !result.locations.every((location: {temp: unknown}) => typeof location.temp === 'number')) throw new Error('Invalid forecast');
+        if (active) setWeather(result);
+      })
+      .catch(() => { if (active) setError(true); })
+      .finally(() => { window.clearTimeout(timeout); if (active) setLoading(false); });
+    return () => { active = false; controller.abort(); window.clearTimeout(timeout); };
+  }, [retry]);
+  const formatTime = (value: string) => new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(value));
+  const locations = WEATHER_FORECAST.map((metadata, index) => ({
+    ...metadata,
+    temp: '—' as number | string, tempMin: '—' as number | string, tempMax: '—' as number | string,
+    condition: loading ? '正在取得官方預報' : '暫時無法取得預報', rainProb: '—', humidity: '—', wind: '—', uvIndex: '未提供',
+    clothingTip: '山區天候多變，請備妥雨具及保暖衣物。',
+    ...weather?.locations[index],
+  }));
   const [selectedLocation, setSelectedLocation] = useState<number>(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const goToLocation = (index: number) => {
@@ -42,7 +70,11 @@ export const WeatherWidget: React.FC = () => {
 
         </div>
 
-        <p className="mt-3 text-xs leading-relaxed text-[#735A8B]">天氣參考資料・非即時預報。出發前請確認最新天氣，山區天候以現場為準。</p>
+        <div className="mt-3 text-xs leading-relaxed text-[#735A8B]" aria-live="polite">
+          <p>{weather ? `資料來源：中央氣象署 · 擷取時間 ${formatTime(weather.fetchedAt)}` : loading ? '正在取得中央氣象署最新預報…' : '目前無法取得官方天氣資料。'}</p>
+          <p>顯示最新可用預報，非現場觀測或指定旅遊日期預報。</p>
+          {(error || weather?.stale) && <p className="mt-1 text-[#92400E]">{weather ? '更新暫時失敗，顯示上次成功取得的預報。' : '請稍後重試。'}<button type="button" disabled={loading} onClick={() => setRetry((value) => value + 1)} className="inline-flex min-h-11 items-center px-3 font-semibold underline disabled:opacity-50">重新取得</button></p>}
+        </div>
 
         <div className="relative mt-5">
         <div
@@ -71,7 +103,7 @@ export const WeatherWidget: React.FC = () => {
           }}
           className="weather-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory overscroll-x-contain pb-2 rounded-2xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
         >
-        {WEATHER_FORECAST.map((current, index) => (
+        {locations.map((current, index) => (
         <article key={current.location} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${WEATHER_FORECAST.length}：${current.location}`} className="min-w-0 shrink-0 basis-[94%] sm:basis-full snap-start snap-always rounded-2xl border border-[#E5D7EE] p-3 sm:p-5">
         {/* Weather Card Content: Luminous & Warm */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
@@ -96,6 +128,12 @@ export const WeatherWidget: React.FC = () => {
               <h4 className="text-xl sm:text-2xl font-serif-tc font-bold text-[#351D4A] mb-3">
                 {current.location}
               </h4>
+              {weather?.locations[index] && <div className="text-xs leading-relaxed text-[#735A8B] mb-3">
+                <p>預報地點：{weather.locations[index].forecastLocation}</p>
+                {index === 1 && <p>採竹崎鄉區域預報；奮起湖山區氣溫可能不同。</p>}
+                <p>{formatTime(weather.locations[index].validFrom)}～{formatTime(weather.locations[index].validTo)}</p>
+                <p>溫度預報時點：{formatTime(weather.locations[index].temperatureTime)}</p>
+              </div>}
 
               <div className="flex flex-wrap items-baseline gap-3 mb-4">
                 <div className="text-5xl sm:text-6xl font-bold font-mono tracking-tight text-[#3A2052] tabular-nums">
@@ -105,28 +143,11 @@ export const WeatherWidget: React.FC = () => {
                   <span className="text-sm font-semibold text-[#3A2052]">
                     {current.condition}
                   </span>
-                  <span>日溫差：{current.tempMin}°C ~ {current.tempMax}°C</span>
+                  <span>未來 24 小時：{current.tempMin}°C ~ {current.tempMax}°C</span>
                 </div>
               </div>
             </div>
 
-            {/* Sun times strip */}
-            <div className="relative z-10 pt-4 border-t border-[#DFCFEC] grid grid-cols-2 gap-3 text-xs text-[#6B5282]">
-              <div className="flex items-center gap-2 bg-white/60 p-2 rounded-xl border border-[#EADEF2]/70">
-                <Sunrise className="w-4 h-4 text-[#D97706] shrink-0" />
-                <div>
-                  <span className="text-[11px] text-[#7A648F] block">阿里山日出</span>
-                  <span className="font-semibold text-[#3A2052] font-mono">{current.sunrise}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 bg-white/60 p-2 rounded-xl border border-[#EADEF2]/70">
-                <Sunset className="w-4 h-4 text-[#E11D48] shrink-0" />
-                <div>
-                  <span className="text-[11px] text-[#7A648F] block">高山日落</span>
-                  <span className="font-semibold text-[#3A2052] font-mono">{current.sunset}</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Meteorological Metrics & Clothing Guide */}
@@ -182,7 +203,7 @@ export const WeatherWidget: React.FC = () => {
                 </div>
                 <div>
                   <h5 className="text-xs sm:text-sm font-bold text-[#3A2052] mb-1">
-                    高山穿著導引
+                    穿著參考
                   </h5>
                   <p className="text-xs sm:text-sm text-[#5B466F] leading-relaxed">
                     {current.clothingTip}
