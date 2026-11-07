@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { animate, motion, useMotionValue, useTransform } from 'motion/react';
 import { WEATHER_FORECAST } from '../data/tourData';
 import { MapleLeaf, StarSparkle } from './MapleLeafStars';
 import {
@@ -67,30 +66,21 @@ export const WeatherWidget: React.FC = () => {
     if (carouselRef.current) observer.observe(carouselRef.current);
     return () => { observer.disconnect(); query.removeEventListener('change', updateMotion); document.removeEventListener('visibilitychange', updateVisibility); };
   }, []);
-  const cardX = useMotionValue(0);
-  const rotation = useTransform(cardX, [-180, 0, 180], [-6, 0, 6]);
-  const gesture = useRef<{id: number; x: number; y: number; horizontal: boolean} | null>(null);
-  const animationRef = useRef<ReturnType<typeof animate> | null>(null);
-  useEffect(() => () => { animationRef.current?.stop(); }, []);
-  const settle = useCallback(() => {
-    animationRef.current?.stop();
-    animationRef.current = animate(cardX, 0, { type: 'spring', stiffness: 360, damping: 30 });
-  }, [cardX]);
+  const gesture = useRef<{id: number; x: number; y: number; horizontal: boolean; scroll: number; index: number} | null>(null);
   const goToLocation = useCallback((index: number, manual = true) => {
     if (manual) setAutoPlay(false);
+    const container = carouselRef.current;
+    if (!container) return;
     const next = Math.max(0, Math.min(WEATHER_FORECAST.length - 1, index));
-    if (next === selectedLocation) { settle(); return; }
-    animationRef.current?.stop();
-    if (!reducedMotion) cardX.set(next > selectedLocation ? 36 : -36);
-    else cardX.set(0);
-    setSelectedLocation(next);
-    settle();
-  }, [cardX, reducedMotion, selectedLocation, settle]);
+    container.scrollTo({ left: next * container.clientWidth, behavior: reducedMotion ? 'instant' : 'smooth' });
+  }, [reducedMotion]);
   const dragHandlers = {
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
       if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
-      animationRef.current?.stop();
-      gesture.current = {id: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false};
+      const container = carouselRef.current;
+      if (!container) return;
+      container.scrollTo({left: container.scrollLeft, behavior: 'instant'});
+      gesture.current = {id: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false, scroll: container.scrollLeft, index: Math.round(container.scrollLeft / container.clientWidth)};
       event.currentTarget.setPointerCapture(event.pointerId);
       setInteracting(true);
     },
@@ -102,14 +92,14 @@ export const WeatherWidget: React.FC = () => {
       if (!start.horizontal && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
         gesture.current = null;
         setInteracting(false);
-        settle();
+        goToLocation(start.index, false);
         return;
       }
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
         start.horizontal = true;
         setAutoPlay(false);
       }
-      if (start.horizontal && !reducedMotion) cardX.set(Math.max(-150, Math.min(150, dx)));
+      if (start.horizontal && carouselRef.current) carouselRef.current.scrollLeft = start.scroll - dx;
     },
     onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => {
       const start = gesture.current;
@@ -118,10 +108,15 @@ export const WeatherWidget: React.FC = () => {
       if (!start || start.id !== event.pointerId) return;
       const dx = event.clientX - start.x;
       if (start.horizontal && Math.abs(dx) >= Math.min(72, event.currentTarget.clientWidth * .22)) {
-        goToLocation(selectedLocation + (dx < 0 ? 1 : -1));
-      } else settle();
+        goToLocation(start.index + (dx < 0 ? 1 : -1));
+      } else goToLocation(start.index, false);
     },
-    onPointerCancel: () => { gesture.current = null; setInteracting(false); settle(); },
+    onPointerCancel: () => {
+      const start = gesture.current;
+      gesture.current = null;
+      setInteracting(false);
+      if (start) goToLocation(start.index, false);
+    },
   };
   useEffect(() => {
     if (!autoPlay || interacting || focused || !visible || !pageVisible || reducedMotion) return;
@@ -149,6 +144,13 @@ export const WeatherWidget: React.FC = () => {
         <button type="button" aria-label="上一個地點" disabled={selectedLocation === 0} onClick={() => goToLocation(selectedLocation - 1)} className="relative z-10 -ml-2 flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] bg-white text-[#6E4B8B] shadow-sm disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-[#7D6895]">
           <ChevronLeft className="h-5 w-5" />
         </button>
+        <div className="relative min-w-0 weather-postcard-deck">
+          {[1, 2].map((depth) => {
+            const next = (selectedLocation + depth) % locations.length;
+            return <div key={depth} aria-hidden="true" className={`weather-postcard-back weather-postcard-back-${depth}`}>
+              <img src={['/images/hero_sunrise.jpg', '/images/fenqihu.jpg', '/images/npm_south.jpg'][next]} alt="" draggable={false} className="h-full w-full object-cover opacity-40" />
+            </div>;
+          })}
         <div
           ref={carouselRef}
           role="region"
@@ -161,17 +163,15 @@ export const WeatherWidget: React.FC = () => {
               goToLocation(Math.max(0, Math.min(locations.length - 1, selectedLocation + (event.key === 'ArrowRight' ? 1 : -1))));
             }
           }}
-          className="relative min-w-0 weather-postcard-deck focus-visible:outline-2 focus-visible:outline-[#7D6895]"
+          onScroll={() => {
+            const container = carouselRef.current;
+            if (container) setSelectedLocation(Math.round(container.scrollLeft / container.clientWidth));
+          }}
+          className="relative z-[3] flex overflow-hidden rounded-3xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
 
         >
-          {[1, 2].map((depth) => {
-            const next = (selectedLocation + depth) % locations.length;
-            return <div key={depth} aria-hidden="true" className={`weather-postcard-back weather-postcard-back-${depth}`}>
-              <img src={['/images/hero_sunrise.jpg', '/images/fenqihu.jpg', '/images/npm_south.jpg'][next]} alt="" draggable={false} className="h-full w-full object-cover opacity-40" />
-            </div>;
-          })}
-          {locations.map((current, index) => index === selectedLocation && (
-            <motion.article style={{ x: cardX, rotate: reducedMotion ? 0 : rotation }} key={current.location} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="relative z-[3] min-w-0 rounded-3xl shadow-[0_12px_32px_rgba(70,40,90,0.10)] border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
+          {locations.map((current, index) => (
+            <article aria-hidden={index !== selectedLocation} key={current.location} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="relative min-w-0 basis-full shrink-0 rounded-3xl shadow-[0_12px_32px_rgba(70,40,90,0.10)] border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
               <div {...dragHandlers} style={{touchAction: 'pan-y'}} className="cursor-grab active:cursor-grabbing select-none">
               <div className="relative h-32 sm:h-44 overflow-hidden bg-[#D9CCE4]">
                 <img src={['/images/hero_sunrise.jpg', '/images/fenqihu.jpg', '/images/npm_south.jpg'][index]} alt={['阿里山日出與層疊山巒', '奮起湖山城風景', '故宮南院建築風景'][index]} loading="lazy" draggable={false} className="h-full w-full object-cover select-none" />
@@ -226,8 +226,9 @@ export const WeatherWidget: React.FC = () => {
                 </div>
               </div>}
               </div>
-            </motion.article>
+            </article>
           ))}
+        </div>
         </div>
         <button type="button" aria-label="下一個地點" disabled={selectedLocation === locations.length - 1} onClick={() => goToLocation(selectedLocation + 1)} className="relative z-10 -ml-4 sm:-ml-2 flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] bg-white text-[#6E4B8B] shadow-sm disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-[#7D6895]">
           <ChevronRight className="h-5 w-5" />
