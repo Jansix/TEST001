@@ -194,3 +194,21 @@ header a:active {
 @media (prefers-reduced-motion: reduce) {
   .falling-leaf { display: none; animation: none !important; }
 }
+
+.weather-postcard-deck { isolation: isolate; }
+.weather-postcard-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid #d7c3e2;
+  background: #ece2f2;
+  pointer-events: none;
+  transform-origin: 50% 0;
+}
+.weather-postcard-back-1 { z-index: 2; transform: translateY(-9px) scale(.96) rotate(-1deg); }
+.weather-postcard-back-2 { z-index: 1; transform: translateY(-18px) scale(.91) rotate(1.5deg); }
+@media (prefers-reduced-motion: reduce) {
+  .weather-postcard-back-1 { transform: translateY(-7px) scale(.96); }
+  .weather-postcard-back-2 { transform: translateY(-14px) scale(.91); }
+}

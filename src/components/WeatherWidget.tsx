@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { animate, motion, useMotionValue, useTransform } from 'motion/react';
 import { WEATHER_FORECAST } from '../data/tourData';
 import { MapleLeaf, StarSparkle } from './MapleLeafStars';
 import {
@@ -66,18 +67,65 @@ export const WeatherWidget: React.FC = () => {
     if (carouselRef.current) observer.observe(carouselRef.current);
     return () => { observer.disconnect(); query.removeEventListener('change', updateMotion); document.removeEventListener('visibilitychange', updateVisibility); };
   }, []);
-  const goToLocation = useCallback((index: number) => {
-    const container = carouselRef.current;
-    const slide = container?.children[index] as HTMLElement | undefined;
-    if (!container || !slide) return;
-    container.scrollTo({
-      left: container.scrollLeft + slide.getBoundingClientRect().left - container.getBoundingClientRect().left,
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
-    });
-  }, []);
+  const cardX = useMotionValue(0);
+  const rotation = useTransform(cardX, [-180, 0, 180], [-6, 0, 6]);
+  const gesture = useRef<{id: number; x: number; y: number; horizontal: boolean} | null>(null);
+  const animationRef = useRef<ReturnType<typeof animate> | null>(null);
+  useEffect(() => () => { animationRef.current?.stop(); }, []);
+  const settle = useCallback(() => {
+    animationRef.current?.stop();
+    animationRef.current = animate(cardX, 0, { type: 'spring', stiffness: 360, damping: 30 });
+  }, [cardX]);
+  const goToLocation = useCallback((index: number, manual = true) => {
+    if (manual) setAutoPlay(false);
+    const next = Math.max(0, Math.min(WEATHER_FORECAST.length - 1, index));
+    if (next === selectedLocation) { settle(); return; }
+    animationRef.current?.stop();
+    if (!reducedMotion) cardX.set(next > selectedLocation ? 36 : -36);
+    else cardX.set(0);
+    setSelectedLocation(next);
+    settle();
+  }, [cardX, reducedMotion, selectedLocation, settle]);
+  const dragHandlers = {
+    onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      animationRef.current?.stop();
+      gesture.current = {id: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false};
+      event.currentTarget.setPointerCapture(event.pointerId);
+      setInteracting(true);
+    },
+    onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => {
+      const start = gesture.current;
+      if (!start || start.id !== event.pointerId) return;
+      const dx = event.clientX - start.x;
+      const dy = event.clientY - start.y;
+      if (!start.horizontal && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
+        gesture.current = null;
+        setInteracting(false);
+        settle();
+        return;
+      }
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
+        start.horizontal = true;
+        setAutoPlay(false);
+      }
+      if (start.horizontal && !reducedMotion) cardX.set(Math.max(-150, Math.min(150, dx)));
+    },
+    onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => {
+      const start = gesture.current;
+      gesture.current = null;
+      setInteracting(false);
+      if (!start || start.id !== event.pointerId) return;
+      const dx = event.clientX - start.x;
+      if (start.horizontal && Math.abs(dx) >= Math.min(72, event.currentTarget.clientWidth * .22)) {
+        goToLocation(selectedLocation + (dx < 0 ? 1 : -1));
+      } else settle();
+    },
+    onPointerCancel: () => { gesture.current = null; setInteracting(false); settle(); },
+  };
   useEffect(() => {
     if (!autoPlay || interacting || focused || !visible || !pageVisible || reducedMotion) return;
-    const timer = window.setTimeout(() => goToLocation((selectedLocation + 1) % WEATHER_FORECAST.length), 6000);
+    const timer = window.setTimeout(() => goToLocation((selectedLocation + 1) % WEATHER_FORECAST.length, false), 6000);
     return () => window.clearTimeout(timer);
   }, [autoPlay, interacting, focused, visible, pageVisible, reducedMotion, selectedLocation, goToLocation]);
 
@@ -89,7 +137,7 @@ export const WeatherWidget: React.FC = () => {
         </h3>
       </div>
 
-      <div className="grid grid-cols-[20px_minmax(0,1fr)_20px] sm:grid-cols-[28px_minmax(0,1fr)_28px] items-center"
+      <div className="grid grid-cols-[20px_minmax(0,1fr)_20px] sm:grid-cols-[28px_minmax(0,1fr)_28px] items-center pt-5"
         onPointerEnter={(event) => { if (event.pointerType === 'mouse') setInteracting(true); }}
         onPointerLeave={() => setInteracting(false)}
         onPointerDown={() => setInteracting(true)}
@@ -113,22 +161,18 @@ export const WeatherWidget: React.FC = () => {
               goToLocation(Math.max(0, Math.min(locations.length - 1, selectedLocation + (event.key === 'ArrowRight' ? 1 : -1))));
             }
           }}
-          onScroll={() => {
-            const container = carouselRef.current;
-            if (!container) return;
-            const left = container.getBoundingClientRect().left;
-            let nearest = 0;
-            let distance = Infinity;
-            Array.from(container.children).forEach((slide, index) => {
-              const delta = Math.abs(slide.getBoundingClientRect().left - left);
-              if (delta < distance) { distance = delta; nearest = index; }
-            });
-            setSelectedLocation(nearest);
-          }}
-          className="weather-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory overscroll-x-contain rounded-3xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
+          className="relative min-w-0 weather-postcard-deck focus-visible:outline-2 focus-visible:outline-[#7D6895]"
+
         >
-          {locations.map((current, index) => (
-            <article key={current.location} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="min-w-0 shrink-0 basis-full snap-start snap-always rounded-3xl border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
+          {[1, 2].map((depth) => {
+            const next = (selectedLocation + depth) % locations.length;
+            return <div key={depth} aria-hidden="true" className={`weather-postcard-back weather-postcard-back-${depth}`}>
+              <img src={['/images/hero_sunrise.jpg', '/images/fenqihu.jpg', '/images/npm_south.jpg'][next]} alt="" draggable={false} className="h-full w-full object-cover opacity-40" />
+            </div>;
+          })}
+          {locations.map((current, index) => index === selectedLocation && (
+            <motion.article style={{ x: cardX, rotate: reducedMotion ? 0 : rotation }} key={current.location} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="relative z-[3] min-w-0 rounded-3xl shadow-[0_12px_32px_rgba(70,40,90,0.10)] border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
+              <div {...dragHandlers} style={{touchAction: 'pan-y'}} className="cursor-grab active:cursor-grabbing select-none">
               <div className="relative h-32 sm:h-44 overflow-hidden bg-[#D9CCE4]">
                 <img src={['/images/hero_sunrise.jpg', '/images/fenqihu.jpg', '/images/npm_south.jpg'][index]} alt={['阿里山日出與層疊山巒', '奮起湖山城風景', '故宮南院建築風景'][index]} loading="lazy" draggable={false} className="h-full w-full object-cover select-none" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#351D4A]/65 via-transparent to-transparent pointer-events-none" />
@@ -153,6 +197,9 @@ export const WeatherWidget: React.FC = () => {
                 </div>
               </div>
 
+              </div>
+              </div>
+              <div className="px-5 pb-5 sm:px-8 sm:pb-8">
               <div className="grid grid-cols-3 divide-x divide-[#DDCCE8] border-y border-[#DDCCE8] py-4 mt-5">
                 {[
                   {label:'降雨',value:current.rainProb,Icon:Umbrella},
@@ -179,7 +226,7 @@ export const WeatherWidget: React.FC = () => {
                 </div>
               </div>}
               </div>
-            </article>
+            </motion.article>
           ))}
         </div>
         <button type="button" aria-label="下一個地點" disabled={selectedLocation === locations.length - 1} onClick={() => goToLocation(selectedLocation + 1)} className="relative z-10 -ml-4 sm:-ml-2 flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] bg-white text-[#6E4B8B] shadow-sm disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-[#7D6895]">
