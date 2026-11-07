@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { WEATHER_FORECAST } from '../data/tourData';
 import { MapleLeaf, StarSparkle } from './MapleLeafStars';
 import {
@@ -66,13 +66,39 @@ export const WeatherWidget: React.FC = () => {
     if (carouselRef.current) observer.observe(carouselRef.current);
     return () => { observer.disconnect(); query.removeEventListener('change', updateMotion); document.removeEventListener('visibilitychange', updateVisibility); };
   }, []);
+  const wrap = (index: number) => (index + WEATHER_FORECAST.length) % WEATHER_FORECAST.length;
+  const loopResetTimer = useRef<number | undefined>(undefined);
+  const activeIndexRef = useRef(selectedLocation);
+  activeIndexRef.current = selectedLocation;
+  useLayoutEffect(() => {
+    const container = carouselRef.current;
+    if (!container) return;
+    let width = container.clientWidth;
+    container.scrollTo({left: width, behavior: 'instant'});
+    const observer = new ResizeObserver(() => {
+      if (container.clientWidth !== width) {
+        width = container.clientWidth;
+        container.scrollTo({left: (activeIndexRef.current + 1) * width, behavior: 'instant'});
+      }
+    });
+    observer.observe(container);
+    return () => { observer.disconnect(); window.clearTimeout(loopResetTimer.current); };
+  }, []);
   const gesture = useRef<{id: number; x: number; y: number; horizontal: boolean; scroll: number; index: number} | null>(null);
   const goToLocation = useCallback((index: number, manual = true) => {
     if (manual) setAutoPlay(false);
     const container = carouselRef.current;
     if (!container) return;
-    const next = Math.max(0, Math.min(WEATHER_FORECAST.length - 1, index));
-    container.scrollTo({ left: next * container.clientWidth, behavior: reducedMotion ? 'instant' : 'smooth' });
+    let next = index;
+    let current = Math.round(container.scrollLeft / container.clientWidth) - 1;
+    if (current === -1 || current === WEATHER_FORECAST.length) {
+      current = (current + WEATHER_FORECAST.length) % WEATHER_FORECAST.length;
+      container.scrollTo({left: (current + 1) * container.clientWidth, behavior: 'instant'});
+    }
+    if (next - current > 1) next -= WEATHER_FORECAST.length;
+    else if (current - next > 1) next += WEATHER_FORECAST.length;
+    next = Math.max(-1, Math.min(WEATHER_FORECAST.length, next));
+    container.scrollTo({ left: (next + 1) * container.clientWidth, behavior: reducedMotion ? 'instant' : 'smooth' });
   }, [reducedMotion]);
   const dragHandlers = {
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
@@ -80,7 +106,7 @@ export const WeatherWidget: React.FC = () => {
       const container = carouselRef.current;
       if (!container) return;
       container.scrollTo({left: container.scrollLeft, behavior: 'instant'});
-      gesture.current = {id: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false, scroll: container.scrollLeft, index: Math.round(container.scrollLeft / container.clientWidth)};
+      gesture.current = {id: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false, scroll: container.scrollLeft, index: Math.round(container.scrollLeft / container.clientWidth) - 1};
       event.currentTarget.setPointerCapture(event.pointerId);
       setInteracting(true);
     },
@@ -120,7 +146,7 @@ export const WeatherWidget: React.FC = () => {
   };
   useEffect(() => {
     if (!autoPlay || interacting || focused || !visible || !pageVisible || reducedMotion) return;
-    const timer = window.setTimeout(() => goToLocation((selectedLocation + 1) % WEATHER_FORECAST.length, false), 6000);
+    const timer = window.setTimeout(() => goToLocation(selectedLocation + 1, false), 6000);
     return () => window.clearTimeout(timer);
   }, [autoPlay, interacting, focused, visible, pageVisible, reducedMotion, selectedLocation, goToLocation]);
 
@@ -141,7 +167,7 @@ export const WeatherWidget: React.FC = () => {
         onFocusCapture={() => setFocused(true)}
         onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false); }}
       >
-        <button type="button" aria-label="上一個地點" disabled={selectedLocation === 0} onClick={() => goToLocation(selectedLocation - 1)} className="relative z-10 -ml-2 flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] bg-white text-[#6E4B8B] shadow-sm disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-[#7D6895]">
+        <button type="button" aria-label="上一個地點" onClick={() => goToLocation(selectedLocation - 1)} className="relative z-10 -ml-2 flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] bg-white text-[#6E4B8B] shadow-sm disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-[#7D6895]">
           <ChevronLeft className="h-5 w-5" />
         </button>
         <div className="relative min-w-0 weather-postcard-deck">
@@ -160,18 +186,30 @@ export const WeatherWidget: React.FC = () => {
           onKeyDown={(event) => {
             if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
               event.preventDefault();
-              goToLocation(Math.max(0, Math.min(locations.length - 1, selectedLocation + (event.key === 'ArrowRight' ? 1 : -1))));
+              goToLocation(selectedLocation + (event.key === 'ArrowRight' ? 1 : -1));
             }
           }}
           onScroll={() => {
             const container = carouselRef.current;
-            if (container) setSelectedLocation(Math.round(container.scrollLeft / container.clientWidth));
+            if (!container) return;
+            const position = Math.round(container.scrollLeft / container.clientWidth);
+            setSelectedLocation(wrap(position - 1));
+            window.clearTimeout(loopResetTimer.current);
+            loopResetTimer.current = window.setTimeout(() => {
+              if (gesture.current) return;
+              const at = Math.round(container.scrollLeft / container.clientWidth);
+              if (at === 0 || at === WEATHER_FORECAST.length + 1) {
+                container.scrollTo({left: (at === 0 ? WEATHER_FORECAST.length : 1) * container.clientWidth, behavior: 'instant'});
+              }
+            }, 140);
           }}
           className="relative z-[3] flex overflow-hidden rounded-3xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
 
         >
-          {locations.map((current, index) => (
-            <article aria-hidden={index !== selectedLocation} key={current.location} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="relative min-w-0 basis-full shrink-0 rounded-3xl shadow-[0_12px_32px_rgba(70,40,90,0.10)] border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
+          {[locations[locations.length - 1], ...locations, locations[0]].map((current, slideIndex) => {
+            const index = wrap(slideIndex - 1);
+            return (
+            <article aria-hidden={index !== selectedLocation || slideIndex === 0 || slideIndex === locations.length + 1} key={slideIndex} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="relative min-w-0 basis-full shrink-0 rounded-3xl shadow-[0_12px_32px_rgba(70,40,90,0.10)] border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
               <div {...dragHandlers} style={{touchAction: 'pan-y'}} className="cursor-grab active:cursor-grabbing select-none">
               <div className="relative h-32 sm:h-44 overflow-hidden bg-[#D9CCE4]">
                 <img src={['/images/hero_sunrise.jpg', '/images/fenqihu.jpg', '/images/npm_south.jpg'][index]} alt={['阿里山日出與層疊山巒', '奮起湖山城風景', '故宮南院建築風景'][index]} loading="lazy" draggable={false} className="h-full w-full object-cover select-none" />
@@ -227,10 +265,10 @@ export const WeatherWidget: React.FC = () => {
               </div>}
               </div>
             </article>
-          ))}
+          );})}
         </div>
         </div>
-        <button type="button" aria-label="下一個地點" disabled={selectedLocation === locations.length - 1} onClick={() => goToLocation(selectedLocation + 1)} className="relative z-10 -ml-4 sm:-ml-2 flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] bg-white text-[#6E4B8B] shadow-sm disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-[#7D6895]">
+        <button type="button" aria-label="下一個地點" onClick={() => goToLocation(selectedLocation + 1)} className="relative z-10 -ml-4 sm:-ml-2 flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] bg-white text-[#6E4B8B] shadow-sm disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-[#7D6895]">
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
