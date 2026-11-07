@@ -94,7 +94,7 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
           {/* STATE 1: BEFORE TRIP (< 11/14 06:40) */}
           {tripStatus === 'BEFORE' && (
             <div className="text-center max-w-3xl mx-auto animate-in fade-in duration-300">
-              <div className="relative h-48 sm:h-64 rounded-2xl overflow-hidden mb-6 bg-[#493457] text-white text-left">
+              <div className="journey-cover relative h-48 sm:h-64 rounded-2xl overflow-hidden mb-6 bg-[#493457] text-white text-left">
                 <img src="/images/forest_train.jpg" alt="阿里山森林鐵道與山林景色" className="absolute inset-0 h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-r from-[#241632]/85 via-[#352247]/50 to-transparent" />
                 <div className="relative h-full flex flex-col justify-between p-5 sm:p-7">

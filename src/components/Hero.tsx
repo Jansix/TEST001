@@ -15,7 +15,7 @@ export const Hero: React.FC<HeroProps> = () => {
         <img
           src="/images/hero_sunrise.jpg"
           alt="阿里山晨曦雲海與玉山群峰浩瀚日出"
-          className="w-full h-full object-cover object-center opacity-20 mix-blend-multiply filter blur-[0.4px] scale-105"
+          className="premium-landscape w-full h-full object-cover object-center opacity-20 mix-blend-multiply filter blur-[0.4px] scale-105"
           referrerPolicy="no-referrer"
         />
         {/* Warm dawn watercolor tint layers (amber glow + lavender mist) */}

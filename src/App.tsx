@@ -15,6 +15,38 @@ import { EmergencyContacts } from './components/EmergencyContacts';
 import { Footer } from './components/Footer';
 
 export default function App() {
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let observer: IntersectionObserver | undefined;
+    const sections = Array.from(document.querySelectorAll<HTMLElement>('main section[id]'));
+    const setup = () => {
+      observer?.disconnect();
+      sections.forEach((section) => section.classList.remove('reveal-ready', 'reveal-visible'));
+      if (query.matches || !('IntersectionObserver' in window)) return;
+      observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('reveal-visible');
+            observer?.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0, rootMargin: '0px 0px -24px 0px' });
+      sections.forEach((section) => {
+        if (section.getBoundingClientRect().top > window.innerHeight) {
+          section.classList.add('reveal-ready');
+          observer?.observe(section);
+        }
+      });
+    };
+    setup();
+    query.addEventListener('change', setup);
+    return () => {
+      observer?.disconnect();
+      query.removeEventListener('change', setup);
+      sections.forEach((section) => section.classList.remove('reveal-ready', 'reveal-visible'));
+    };
+  }, []);
+
   const [showBackToTop, setShowBackToTop] = useState(false);
   useEffect(() => {
     const updateScroll = () => setShowBackToTop(window.scrollY > 400);
@@ -44,7 +76,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-[#FAF6FC] via-[#FDFBFD] to-[#FAF5FA] text-[#2D1F3B] selection:bg-[#EADEF2] selection:text-[#3B2052]">
       <Header />
 
-      <main className="flex-1">
+      <main className="premium-main flex-1">
         <div id="overview">
           <Hero />
           <DynamicDashboard onSwitchToItinerary={scrollToItinerary} />

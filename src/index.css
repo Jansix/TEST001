@@ -92,3 +92,71 @@ html {
 
 .weather-carousel { scrollbar-width: none; }
 .weather-carousel::-webkit-scrollbar { display: none; }
+
+/* Quiet, warm highlights and restrained movement. */
+.premium-main {
+  background-image: radial-gradient(ellipse at 0% 25%, #e9d8f033, transparent 45%),
+    radial-gradient(ellipse at 100% 62%, #f4dfbd26, transparent 40%);
+}
+#itinerary > div:first-child,
+#info > div:first-child,
+#contact > div:first-child {
+  border-image: linear-gradient(90deg, transparent, #d6badf, #cba66c66, transparent) 1;
+}
+.reveal-ready {
+  opacity: .35;
+  transform: translateY(14px);
+  transition: opacity .75s ease, transform .75s cubic-bezier(.2,.65,.3,1);
+}
+.reveal-ready.reveal-visible {
+  opacity: 1;
+  transform: none;
+}
+@keyframes landscape-arrival {
+  from { transform: scale(1.055); }
+  to { transform: scale(1.015); }
+}
+.premium-landscape { animation: landscape-arrival 12s ease-out both; }
+.journey-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid #f3dfbb55;
+  pointer-events: none;
+}
+.premium-main button,
+.premium-main summary,
+header a,
+button[aria-label="回到頂端"] {
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .2s ease, color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.premium-main button:active,
+header a:active {
+  transform: scale(.98);
+}
+#info details[open] > div {
+  animation: information-arrival .35s ease both;
+}
+@keyframes information-arrival {
+  from { opacity: .5; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .journey-cover img, #info summary img {
+    transition: transform 1.1s cubic-bezier(.2,.65,.3,1);
+  }
+  .journey-cover:hover img, #info summary:hover img { transform: scale(1.035); }
+  .premium-main button:not(:disabled):hover { box-shadow: 0 5px 18px #5a3d7312; }
+  #info summary:hover { background-color: #f6f0f9; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal-ready { opacity: 1; transform: none; }
+}
