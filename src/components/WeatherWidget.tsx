@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { WEATHER_FORECAST } from '../data/tourData';
 import { MapleLeaf, StarSparkle } from './MapleLeafStars';
 import {
@@ -73,20 +74,12 @@ export const WeatherWidget: React.FC = () => {
   const [drag, setDrag] = useState({x: 0, angle: 0});
   const animationRef = useRef<Animation | null>(null);
   const alive = useRef(true);
-  const firstCard = useRef(true);
+  const [exiting, setExiting] = useState(false);
   const gesture = useRef<{id: number; x: number; y: number; horizontal: boolean} | null>(null);
   useEffect(() => {
     alive.current = true;
     return () => { alive.current = false; animationRef.current?.cancel(); };
   }, []);
-  useEffect(() => {
-    if (firstCard.current) { firstCard.current = false; return; }
-    if (reducedMotion) return;
-    animationRef.current = activeCardRef.current?.animate([
-      {transform: 'translateY(14px) scale(.96)', opacity: .4},
-      {transform: 'translateY(0) scale(1)', opacity: 1},
-    ], {duration: 300, easing: 'cubic-bezier(.2,.7,.3,1)'}) ?? null;
-  }, [selectedLocation, reducedMotion]);
   const resetDrag = useCallback(() => {
     setPendingTarget(null);
     const previous = dragRef.current;
@@ -104,6 +97,7 @@ export const WeatherWidget: React.FC = () => {
     if (next === selectedLocation) { resetDrag(); return; }
     busyRef.current = true;
     setPendingTarget(next);
+    setExiting(true);
     animationRef.current?.cancel();
     const direction = dragRef.current.x ? Math.sign(dragRef.current.x) : index > selectedLocation ? -1 : 1;
     const distance = Math.max(window.innerWidth, carouselRef.current?.clientWidth ?? 0) + 200;
@@ -114,13 +108,17 @@ export const WeatherWidget: React.FC = () => {
       ], {duration: 340, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards'});
       animationRef.current = animation;
       try { await animation.finished; } catch { busyRef.current = false; return; }
-      animation.cancel();
     }
     if (!alive.current) return;
     dragRef.current = {x: 0, angle: 0};
-    setDrag({x: 0, angle: 0});
-    setSelectedLocation(next);
-    setPendingTarget(null);
+    flushSync(() => {
+      setDrag({x: 0, angle: 0});
+      setSelectedLocation(next);
+      setPendingTarget(null);
+      setExiting(false);
+    });
+    animationRef.current?.cancel();
+    animationRef.current = null;
     busyRef.current = false;
   }, [selectedLocation, reducedMotion, resetDrag]);
   const dragHandlers = {
@@ -201,7 +199,7 @@ export const WeatherWidget: React.FC = () => {
               goToLocation(selectedLocation + (event.key === 'ArrowRight' ? 1 : -1));
             }
           }}
-          className="relative z-[3] rounded-3xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
+          className="relative z-[3] grid rounded-3xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
 
         >
           {locations.map((current, index) => {
@@ -209,10 +207,11 @@ export const WeatherWidget: React.FC = () => {
             const depth = active ? 0 : index === (pendingTarget ?? (selectedLocation + 1) % locations.length) ? 1 : 2;
             return (
             <article ref={active ? activeCardRef : undefined} aria-hidden={!active} inert={!active} style={{
-              position: active ? 'relative' : 'absolute', inset: active ? undefined : 0,
+              position: 'relative', gridArea: '1 / 1', minHeight: 0,
               zIndex: 3 - depth,
-              transform: active ? `translateX(${drag.x}px) rotate(${drag.angle}deg)` : `translateY(${-depth * 9}px) scale(${1 - depth * .04}) rotate(${reducedMotion ? 0 : depth === 1 ? -1 : 1.5}deg)`,
-              transformOrigin: active ? '50% 85%' : '50% 0',
+              transform: active ? `translateX(${drag.x}px) rotate(${drag.angle}deg)` : exiting && index === pendingTarget ? 'translateX(0px) rotate(0deg)' : `translateY(${-depth * 9}px) scale(${1 - depth * .04}) rotate(${reducedMotion ? 0 : depth === 1 ? -1 : 1.5}deg)`,
+              transformOrigin: '50% 85%',
+              transition: !active && !reducedMotion ? 'transform 340ms cubic-bezier(.2,.7,.3,1)' : 'none',
               pointerEvents: active ? 'auto' : 'none',
             }} key={index} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="min-w-0 rounded-3xl shadow-[0_12px_32px_rgba(70,40,90,0.10)] border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
               <div {...dragHandlers} style={{touchAction: 'pan-y'}} className="cursor-grab active:cursor-grabbing select-none">
