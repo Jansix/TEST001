@@ -1,4 +1,4 @@
-import { array, normalizeLocation, type ForecastLocation } from '../lib/cwa-weather';
+import { array, normalizeLocation, type ForecastLocation } from '../lib/cwa-weather.js';
 
 type Payload = { fetchedAt: string; source: string; locations: ReturnType<typeof normalizeLocation>[] };
 let cached: Payload | undefined;
