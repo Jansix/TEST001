@@ -84,6 +84,7 @@ export const WeatherWidget: React.FC = () => {
     observer.observe(container);
     return () => { observer.disconnect(); window.clearTimeout(loopResetTimer.current); };
   }, []);
+  const [dragTilt, setDragTilt] = useState({ index: -1, angle: 0 });
   const gesture = useRef<{id: number; x: number; y: number; horizontal: boolean; scroll: number; index: number} | null>(null);
   const goToLocation = useCallback((index: number, manual = true) => {
     if (manual) setAutoPlay(false);
@@ -117,6 +118,7 @@ export const WeatherWidget: React.FC = () => {
       const dy = event.clientY - start.y;
       if (!start.horizontal && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
         gesture.current = null;
+        setDragTilt({index: -1, angle: 0});
         setInteracting(false);
         goToLocation(start.index, false);
         return;
@@ -125,11 +127,15 @@ export const WeatherWidget: React.FC = () => {
         start.horizontal = true;
         setAutoPlay(false);
       }
-      if (start.horizontal && carouselRef.current) carouselRef.current.scrollLeft = start.scroll - dx;
+      if (start.horizontal && carouselRef.current) {
+        carouselRef.current.scrollLeft = start.scroll - dx;
+        if (!reducedMotion) setDragTilt({index: wrap(start.index), angle: Math.max(-5, Math.min(5, dx / 38))});
+      }
     },
     onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => {
       const start = gesture.current;
       gesture.current = null;
+      setDragTilt({index: -1, angle: 0});
       setInteracting(false);
       if (!start || start.id !== event.pointerId) return;
       const dx = event.clientX - start.x;
@@ -140,6 +146,7 @@ export const WeatherWidget: React.FC = () => {
     onPointerCancel: () => {
       const start = gesture.current;
       gesture.current = null;
+      setDragTilt({index: -1, angle: 0});
       setInteracting(false);
       if (start) goToLocation(start.index, false);
     },
@@ -209,7 +216,7 @@ export const WeatherWidget: React.FC = () => {
           {[locations[locations.length - 1], ...locations, locations[0]].map((current, slideIndex) => {
             const index = wrap(slideIndex - 1);
             return (
-            <article aria-hidden={index !== selectedLocation || slideIndex === 0 || slideIndex === locations.length + 1} key={slideIndex} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="relative min-w-0 basis-full shrink-0 rounded-3xl shadow-[0_12px_32px_rgba(70,40,90,0.10)] border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
+            <article style={{transform: `rotate(${dragTilt.index === index ? dragTilt.angle : 0}deg)`, transformOrigin: '50% 90%', transition: dragTilt.index === index ? 'none' : 'transform 280ms ease'}} aria-hidden={index !== selectedLocation || slideIndex === 0 || slideIndex === locations.length + 1} key={slideIndex} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="relative min-w-0 basis-full shrink-0 rounded-3xl shadow-[0_12px_32px_rgba(70,40,90,0.10)] border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
               <div {...dragHandlers} style={{touchAction: 'pan-y'}} className="cursor-grab active:cursor-grabbing select-none">
               <div className="relative h-32 sm:h-44 overflow-hidden bg-[#D9CCE4]">
                 <img src={['/images/hero_sunrise.jpg', '/images/fenqihu.jpg', '/images/npm_south.jpg'][index]} alt={['阿里山日出與層疊山巒', '奮起湖山城風景', '故宮南院建築風景'][index]} loading="lazy" draggable={false} className="h-full w-full object-cover select-none" />
