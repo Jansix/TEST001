@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ArrowUp } from 'lucide-react';
+import { AutumnAtmosphere } from './components/AutumnAtmosphere';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { DynamicDashboard } from './components/DynamicDashboard';
@@ -74,9 +75,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-[#FAF6FC] via-[#FDFBFD] to-[#FAF5FA] text-[#2D1F3B] selection:bg-[#EADEF2] selection:text-[#3B2052]">
+      <AutumnAtmosphere />
       <Header />
 
-      <main className="premium-main flex-1">
+      <main className="premium-main relative z-10 flex-1">
         <div id="overview">
           <Hero />
           <DynamicDashboard onSwitchToItinerary={scrollToItinerary} />
