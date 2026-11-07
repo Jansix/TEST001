@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { WEATHER_FORECAST } from '../data/tourData';
 import { MapleLeaf, StarSparkle } from './MapleLeafStars';
 import {
@@ -6,6 +6,11 @@ import {
   Wind,
   Umbrella,
   ShieldCheck,
+  Pause,
+  Play,
+  Mountain,
+  TrainFront,
+  Landmark,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -44,7 +49,25 @@ export const WeatherWidget: React.FC = () => {
   }));
   const [selectedLocation, setSelectedLocation] = useState<number>(0);
   const carouselRef = useRef<HTMLDivElement>(null);
-  const goToLocation = (index: number) => {
+  const [autoPlay, setAutoPlay] = useState(true);
+  const [interacting, setInteracting] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [pageVisible, setPageVisible] = useState(!document.hidden);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updateMotion = () => setReducedMotion(query.matches);
+    const updateVisibility = () => setPageVisible(!document.hidden);
+    updateMotion();
+    query.addEventListener('change', updateMotion);
+    document.addEventListener('visibilitychange', updateVisibility);
+    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), { threshold: 0.4 });
+    if (carouselRef.current) observer.observe(carouselRef.current);
+    return () => { observer.disconnect(); query.removeEventListener('change', updateMotion); document.removeEventListener('visibilitychange', updateVisibility); };
+  }, []);
+  const goToLocation = useCallback((index: number) => {
     const container = carouselRef.current;
     const slide = container?.children[index] as HTMLElement | undefined;
     if (!container || !slide) return;
@@ -52,7 +75,12 @@ export const WeatherWidget: React.FC = () => {
       left: container.scrollLeft + slide.getBoundingClientRect().left - container.getBoundingClientRect().left,
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
     });
-  };
+  }, []);
+  useEffect(() => {
+    if (!autoPlay || interacting || focused || detailsOpen || !visible || !pageVisible || reducedMotion) return;
+    const timer = window.setTimeout(() => goToLocation((selectedLocation + 1) % WEATHER_FORECAST.length), 6000);
+    return () => window.clearTimeout(timer);
+  }, [autoPlay, interacting, focused, detailsOpen, visible, pageVisible, reducedMotion, selectedLocation, goToLocation]);
 
   return (
     <section id="weather" className="max-w-5xl mx-auto px-4 sm:px-6 mt-10">
@@ -60,10 +88,17 @@ export const WeatherWidget: React.FC = () => {
         <h3 className="text-xl sm:text-2xl font-serif-tc font-bold text-[#3A2052] flex items-center gap-2">
           <span>天氣</span><MapleLeaf size={18} color="amber" /><StarSparkle size={12} color="#D97706" />
         </h3>
-        <span className="text-xs text-[#735A8B]">左右滑動 · {selectedLocation + 1} / {locations.length}</span>
       </div>
 
-      <div className="grid grid-cols-[20px_minmax(0,1fr)_20px] sm:grid-cols-[28px_minmax(0,1fr)_28px] items-center">
+      <div className="grid grid-cols-[20px_minmax(0,1fr)_20px] sm:grid-cols-[28px_minmax(0,1fr)_28px] items-center"
+        onPointerEnter={(event) => { if (event.pointerType === 'mouse') setInteracting(true); }}
+        onPointerLeave={() => setInteracting(false)}
+        onPointerDown={() => setInteracting(true)}
+        onPointerUp={() => setInteracting(false)}
+        onPointerCancel={() => setInteracting(false)}
+        onFocusCapture={() => setFocused(true)}
+        onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false); }}
+      >
         <button type="button" aria-label="上一個地點" disabled={selectedLocation === 0} onClick={() => goToLocation(selectedLocation - 1)} className="relative z-10 -ml-2 flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] bg-white text-[#6E4B8B] shadow-sm disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-[#7D6895]">
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -94,10 +129,17 @@ export const WeatherWidget: React.FC = () => {
           className="weather-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory overscroll-x-contain rounded-3xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
         >
           {locations.map((current, index) => (
-            <article key={current.location} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="min-w-0 shrink-0 basis-full snap-start snap-always rounded-3xl border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] p-5 sm:p-8">
+            <article key={current.location} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="min-w-0 shrink-0 basis-full snap-start snap-always rounded-3xl border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
+              <div className="relative h-32 sm:h-44 overflow-hidden bg-[#D9CCE4]">
+                <img src={['/images/hero_sunrise.jpg', '/images/fenqihu.jpg', '/images/npm_south.jpg'][index]} alt={['阿里山日出與層疊山巒', '奮起湖山城風景', '故宮南院建築風景'][index]} loading="lazy" draggable={false} className="h-full w-full object-cover select-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#351D4A]/65 via-transparent to-transparent pointer-events-none" />
+                <span aria-hidden="true" className="absolute bottom-3 right-4 rounded-full bg-white/20 backdrop-blur-sm p-2 text-white">{index === 0 ? <Mountain className="h-6 w-6" /> : index === 1 ? <TrainFront className="h-6 w-6" /> : <Landmark className="h-6 w-6" />}</span>
+                <span className="absolute bottom-3 left-5 text-[10px] tracking-[0.25em] text-white/90">{['MOUNTAIN MIST', 'FOREST RAILWAY', 'ART & CULTURE'][index]}</span>
+              </div>
+              <div className="p-5 sm:p-8">
               <div className="flex items-center justify-between gap-2 text-xs text-[#735A8B]">
                 <span>{current.elevation}</span>
-                <span className="font-mono tracking-widest text-[#A187AD]">0{index + 1}</span>
+
               </div>
               <h4 className="mt-2 text-xl sm:text-2xl font-serif-tc font-bold text-[#351D4A]">{['阿里山', '奮起湖', '故宮南院'][index]}</h4>
               <p className="mt-1 text-xs text-[#735A8B] leading-relaxed">{['國家森林遊樂區', '山城老街・森林鐵道', '國立故宮博物院南部院區'][index]}</p>
@@ -129,7 +171,7 @@ export const WeatherWidget: React.FC = () => {
               </div>
               {index === 1 && <p className="mt-3 rounded-lg bg-white/60 p-2.5 text-xs leading-relaxed text-[#78582F]">採竹崎鄉區域預報，非奮起湖現場溫度，山區氣溫可能不同。</p>}
 
-              {weather?.locations[index] && <details className="mt-4 border-t border-[#DDCCE8] pt-1 text-xs text-[#735A8B]">
+              {weather?.locations[index] && <details onToggle={() => setDetailsOpen(Boolean(carouselRef.current?.querySelector('details[open]')))} className="mt-4 border-t border-[#DDCCE8] pt-1 text-xs text-[#735A8B]">
                 <summary className="cursor-pointer min-h-11 flex items-center justify-between gap-2"><span>預報地點與時段</span><ChevronDown className="h-4 w-4" /></summary>
                 <div className="pb-2 space-y-1 leading-relaxed">
                   <p>預報地點：{weather.locations[index].forecastLocation}</p>
@@ -137,6 +179,7 @@ export const WeatherWidget: React.FC = () => {
                   <p>溫度時點：{formatTime(weather.locations[index].temperatureTime)}</p>
                 </div>
               </details>}
+              </div>
             </article>
           ))}
         </div>
@@ -150,6 +193,7 @@ export const WeatherWidget: React.FC = () => {
             <span className={`h-1.5 rounded-full transition-all ${selectedLocation === index ? 'w-6 bg-[#6E4B8B]' : 'w-1.5 bg-[#D8C6E5]'}`} />
           </button>
         ))}
+        {!reducedMotion && <button type="button" aria-label={autoPlay ? '暫停自動輪播' : '啟動自動輪播'} aria-pressed={autoPlay} onClick={() => setAutoPlay((value) => !value)} className="flex h-11 w-11 items-center justify-center rounded-full text-[#735A8B] focus-visible:outline-2 focus-visible:outline-[#7D6895]">{autoPlay ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</button>}
       </div>
       <div className="text-xs leading-relaxed text-[#735A8B] px-5 sm:px-7" aria-live="polite">
         <p>{weather ? `中央氣象署 · 更新 ${formatTime(weather.fetchedAt)}` : loading ? '正在取得中央氣象署最新預報…' : '目前無法取得官方天氣資料。'}</p>
