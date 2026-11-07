@@ -2,12 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { WEATHER_FORECAST } from '../data/tourData';
 import { MapleLeaf, StarSparkle } from './MapleLeafStars';
 import {
-  Sun,
   Droplets,
   Wind,
   Umbrella,
   ShieldCheck,
-  Compass,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -56,27 +55,18 @@ export const WeatherWidget: React.FC = () => {
   };
 
   return (
-    <section id="weather" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
-      <div className="bg-gradient-to-b from-[#FCF9FD] via-white to-[#FAF4FB] rounded-3xl border border-[#EADEF2] p-4 sm:p-8 shadow-[0_4px_20px_rgba(90,61,115,0.04)]">
-        {/* Section Header: Clean title "天氣" as requested */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#EADEF2]">
-          <div>
-            <h3 className="text-xl sm:text-2xl font-serif-tc font-bold text-[#3A2052] flex items-center gap-2">
-              <span>天氣</span>
-              <MapleLeaf size={18} color="amber" />
-              <StarSparkle size={13} color="#D97706" />
-            </h3>
-          </div>
+    <section id="weather" className="max-w-5xl mx-auto px-4 sm:px-6 mt-10">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xl sm:text-2xl font-serif-tc font-bold text-[#3A2052] flex items-center gap-2">
+          <span>天氣</span><MapleLeaf size={18} color="amber" /><StarSparkle size={12} color="#D97706" />
+        </h3>
+        <span className="text-xs text-[#735A8B]">左右滑動 · {selectedLocation + 1} / {locations.length}</span>
+      </div>
 
-        </div>
-
-        <div className="mt-3 text-xs leading-relaxed text-[#735A8B]" aria-live="polite">
-          <p>{weather ? `資料來源：中央氣象署 · 擷取時間 ${formatTime(weather.fetchedAt)}` : loading ? '正在取得中央氣象署最新預報…' : '目前無法取得官方天氣資料。'}</p>
-          <p>顯示最新可用預報，非現場觀測或指定旅遊日期預報。</p>
-          {(error || weather?.stale) && <p className="mt-1 text-[#92400E]">{weather ? '更新暫時失敗，顯示上次成功取得的預報。' : '請稍後重試。'}<button type="button" disabled={loading} onClick={() => setRetry((value) => value + 1)} className="inline-flex min-h-11 items-center px-3 font-semibold underline disabled:opacity-50">重新取得</button></p>}
-        </div>
-
-        <div className="relative mt-5">
+      <div className="grid grid-cols-[20px_minmax(0,1fr)_20px] sm:grid-cols-[28px_minmax(0,1fr)_28px] items-center">
+        <button type="button" aria-label="上一個地點" disabled={selectedLocation === 0} onClick={() => goToLocation(selectedLocation - 1)} className="relative z-10 -ml-2 flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] bg-white text-[#6E4B8B] shadow-sm disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-[#7D6895]">
+          <ChevronLeft className="h-5 w-5" />
+        </button>
         <div
           ref={carouselRef}
           role="region"
@@ -86,7 +76,7 @@ export const WeatherWidget: React.FC = () => {
           onKeyDown={(event) => {
             if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
               event.preventDefault();
-              goToLocation(Math.max(0, Math.min(WEATHER_FORECAST.length - 1, selectedLocation + (event.key === 'ArrowRight' ? 1 : -1))));
+              goToLocation(Math.max(0, Math.min(locations.length - 1, selectedLocation + (event.key === 'ArrowRight' ? 1 : -1))));
             }
           }}
           onScroll={() => {
@@ -101,133 +91,70 @@ export const WeatherWidget: React.FC = () => {
             });
             setSelectedLocation(nearest);
           }}
-          className="weather-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory overscroll-x-contain pb-2 rounded-2xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
+          className="weather-carousel flex gap-3 overflow-x-auto snap-x snap-mandatory overscroll-x-contain rounded-3xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
         >
-        {locations.map((current, index) => (
-        <article key={current.location} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${WEATHER_FORECAST.length}：${current.location}`} className="min-w-0 shrink-0 basis-[94%] sm:basis-full snap-start snap-always rounded-2xl border border-[#E5D7EE] p-3 sm:p-5">
-        {/* Weather Card Content: Luminous & Warm */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-          {/* Main Temperature & Location Badge: Warm Dawn Mist Palette */}
-          <div className="lg:col-span-5 flex flex-col justify-between p-4 sm:p-7 rounded-2xl bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] border border-[#DECFEB] text-[#3D2555] shadow-xs relative overflow-hidden">
-            {/* Watermark leaf */}
-            <div className="absolute -right-6 -bottom-6 opacity-20 pointer-events-none">
-              <MapleLeaf size={160} color="amber" />
-            </div>
+          {locations.map((current, index) => (
+            <article key={current.location} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="min-w-0 shrink-0 basis-full snap-start snap-always rounded-3xl border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] p-5 sm:p-8">
+              <div className="flex items-center justify-between gap-2 text-xs text-[#735A8B]">
+                <span>{current.elevation}</span>
+                <span className="font-mono tracking-widest text-[#A187AD]">0{index + 1}</span>
+              </div>
+              <h4 className="mt-2 text-xl sm:text-2xl font-serif-tc font-bold text-[#351D4A]">{['阿里山', '奮起湖', '故宮南院'][index]}</h4>
+              <p className="mt-1 text-xs text-[#735A8B] leading-relaxed">{['國家森林遊樂區', '山城老街・森林鐵道', '國立故宮博物院南部院區'][index]}</p>
 
-            <div className="relative z-10">
-              <div className="flex items-center justify-between text-xs text-[#735A8B] mb-2">
-                <span className="font-mono bg-white/70 px-2.5 py-0.5 rounded-md border border-[#EADEF2] font-semibold">
-                  {current.elevation}
-                </span>
-                <span className="flex items-center gap-1 text-[#D97706] font-semibold">
-                  <Compass className="w-3.5 h-3.5" />
-                  旅遊重點區
-                </span>
+              <div className="mt-5 flex items-center justify-between gap-3">
+                <div className="flex items-start text-[#3A2052]"><span className="text-6xl sm:text-7xl font-semibold tracking-tighter tabular-nums">{current.temp}</span><span className="mt-1 text-2xl">°C</span></div>
+                <div className="min-w-0 text-right">
+                  <p className="text-sm sm:text-base font-semibold text-[#3A2052] break-words">{current.condition}</p>
+                  <p className="mt-1 text-xs text-[#735A8B]">{current.tempMin}° ~ {current.tempMax}°</p>
+                  <p className="text-[11px] text-[#735A8B]">未來 24 小時</p>
+                </div>
               </div>
 
-              <h4 className="text-xl sm:text-2xl font-serif-tc font-bold text-[#351D4A] mb-3">
-                {current.location}
-              </h4>
-              {weather?.locations[index] && <div className="text-xs leading-relaxed text-[#735A8B] mb-3">
-                <p>預報地點：{weather.locations[index].forecastLocation}</p>
-                {index === 1 && <p>採竹崎鄉區域預報；奮起湖山區氣溫可能不同。</p>}
-                <p>{formatTime(weather.locations[index].validFrom)}～{formatTime(weather.locations[index].validTo)}</p>
-                <p>溫度預報時點：{formatTime(weather.locations[index].temperatureTime)}</p>
-              </div>}
-
-              <div className="flex flex-wrap items-baseline gap-3 mb-4">
-                <div className="text-5xl sm:text-6xl font-bold font-mono tracking-tight text-[#3A2052] tabular-nums">
-                  {current.temp}°
-                </div>
-                <div className="flex flex-col text-xs text-[#6F5786]">
-                  <span className="text-sm font-semibold text-[#3A2052]">
-                    {current.condition}
-                  </span>
-                  <span>未來 24 小時：{current.tempMin}°C ~ {current.tempMax}°C</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Meteorological Metrics & Clothing Guide */}
-          <div className="lg:col-span-7 flex flex-col justify-between space-y-4">
-            {/* 4 Metrics Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3.5 rounded-xl bg-white border border-[#EADEF2] shadow-2xs">
-                <div className="flex items-center gap-1.5 text-xs text-[#7A648F] mb-1">
-                  <Umbrella className="w-3.5 h-3.5 text-[#6366F1]" />
-                  <span>降雨機率</span>
-                </div>
-                <span className="text-lg font-bold font-mono text-[#3A2052] tabular-nums">
-                  {current.rainProb}
-                </span>
+              <div className="grid grid-cols-3 divide-x divide-[#DDCCE8] border-y border-[#DDCCE8] py-4 mt-5">
+                {[
+                  {label:'降雨',value:current.rainProb,Icon:Umbrella},
+                  {label:'濕度',value:current.humidity,Icon:Droplets},
+                  {label:'風速',value:current.wind,Icon:Wind},
+                ].map(({label,value,Icon}) => (
+                  <div key={label} className="min-w-0 text-center px-1">
+                    <div className="flex items-center justify-center gap-1 text-xs text-[#735A8B]"><Icon className="h-3.5 w-3.5 shrink-0" />{label}</div>
+                    <p className="mt-1.5 text-sm sm:text-lg font-semibold text-[#3A2052] tabular-nums break-words">{value}</p>
+                  </div>
+                ))}
               </div>
 
-              <div className="p-3.5 rounded-xl bg-white border border-[#EADEF2] shadow-2xs">
-                <div className="flex items-center gap-1.5 text-xs text-[#7A648F] mb-1">
-                  <Droplets className="w-3.5 h-3.5 text-[#3B82F6]" />
-                  <span>相對濕度</span>
-                </div>
-                <span className="text-lg font-bold font-mono text-[#3A2052] tabular-nums">
-                  {current.humidity}
-                </span>
+              <div className="flex items-start gap-2 mt-4 text-sm leading-relaxed text-[#5B466F]">
+                <ShieldCheck className="h-4 w-4 shrink-0 mt-1" /><p>{current.clothingTip}</p>
               </div>
+              {index === 1 && <p className="mt-3 rounded-lg bg-white/60 p-2.5 text-xs leading-relaxed text-[#78582F]">採竹崎鄉區域預報，非奮起湖現場溫度，山區氣溫可能不同。</p>}
 
-              <div className="p-3.5 rounded-xl bg-white border border-[#EADEF2] shadow-2xs">
-                <div className="flex items-center gap-1.5 text-xs text-[#7A648F] mb-1">
-                  <Sun className="w-3.5 h-3.5 text-[#F59E0B]" />
-                  <span>紫外線指數</span>
+              {weather?.locations[index] && <details className="mt-4 border-t border-[#DDCCE8] pt-1 text-xs text-[#735A8B]">
+                <summary className="cursor-pointer min-h-11 flex items-center justify-between gap-2"><span>預報地點與時段</span><ChevronDown className="h-4 w-4" /></summary>
+                <div className="pb-2 space-y-1 leading-relaxed">
+                  <p>預報地點：{weather.locations[index].forecastLocation}</p>
+                  <p>{formatTime(weather.locations[index].validFrom)}～{formatTime(weather.locations[index].validTo)}</p>
+                  <p>溫度時點：{formatTime(weather.locations[index].temperatureTime)}</p>
                 </div>
-                <span className="text-sm font-bold font-mono text-[#3A2052]">
-                  {current.uvIndex}
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-white border border-[#EADEF2] shadow-2xs">
-                <div className="flex items-center gap-1.5 text-xs text-[#7A648F] mb-1">
-                  <Wind className="w-3.5 h-3.5 text-[#8B5CF6]" />
-                  <span>風速狀況</span>
-                </div>
-                <span className="text-sm font-bold font-mono text-[#3A2052]">
-                  {current.wind}
-                </span>
-              </div>
-            </div>
-
-            {/* Clothing Guide Card */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#FAF3FC] to-white border border-[#E5D7EE]">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-xl bg-[#EFE6F6] text-[#6A4788] shrink-0 mt-0.5">
-                  <ShieldCheck className="w-4 h-4 text-[#6A4788]" />
-                </div>
-                <div>
-                  <h5 className="text-xs sm:text-sm font-bold text-[#3A2052] mb-1">
-                    穿著參考
-                  </h5>
-                  <p className="text-xs sm:text-sm text-[#5B466F] leading-relaxed">
-                    {current.clothingTip}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        </article>
-        ))}
-        </div>
-          <div className="pointer-events-none absolute inset-x-0 top-[160px] z-10 flex justify-between -mx-3 sm:-mx-5">
-            <button type="button" aria-label="上一個地點" disabled={selectedLocation === 0} onClick={() => goToLocation(selectedLocation - 1)} className="pointer-events-auto bg-white/95 shadow-md focus-visible:outline-2 focus-visible:outline-[#7D6895] flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] text-[#6E4B8B] disabled:opacity-30"><ChevronLeft className="h-5 w-5" /></button>
-            <button type="button" aria-label="下一個地點" disabled={selectedLocation === WEATHER_FORECAST.length - 1} onClick={() => goToLocation(selectedLocation + 1)} className="pointer-events-auto bg-white/95 shadow-md focus-visible:outline-2 focus-visible:outline-[#7D6895] flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] text-[#6E4B8B] disabled:opacity-30"><ChevronRight className="h-5 w-5" /></button>
-          </div>
-        </div>
-        <div className="flex items-center justify-center gap-1 mt-2" aria-label="選擇天氣地點">
-          {WEATHER_FORECAST.map((location, index) => (
-            <button key={location.location} type="button" aria-label={`查看${location.location}天氣`} aria-current={selectedLocation === index ? 'true' : undefined} onClick={() => goToLocation(index)} className="flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[#7D6895]">
-              <span className={`h-1.5 rounded-full transition-all ${selectedLocation === index ? 'w-6 bg-[#6E4B8B]' : 'w-1.5 bg-[#D8C6E5]'}`} />
-            </button>
+              </details>}
+            </article>
           ))}
         </div>
+        <button type="button" aria-label="下一個地點" disabled={selectedLocation === locations.length - 1} onClick={() => goToLocation(selectedLocation + 1)} className="relative z-10 -ml-4 sm:-ml-2 flex h-11 w-11 items-center justify-center rounded-full border border-[#DECFEC] bg-white text-[#6E4B8B] shadow-sm disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-[#7D6895]">
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
+      <div className="flex items-center justify-center" aria-label="選擇天氣地點">
+        {locations.map((location, index) => (
+          <button key={location.location} type="button" aria-label={`查看${location.location}天氣`} aria-current={selectedLocation === index ? 'true' : undefined} onClick={() => goToLocation(index)} className="flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[#7D6895]">
+            <span className={`h-1.5 rounded-full transition-all ${selectedLocation === index ? 'w-6 bg-[#6E4B8B]' : 'w-1.5 bg-[#D8C6E5]'}`} />
+          </button>
+        ))}
+      </div>
+      <div className="text-xs leading-relaxed text-[#735A8B] px-5 sm:px-7" aria-live="polite">
+        <p>{weather ? `中央氣象署 · 更新 ${formatTime(weather.fetchedAt)}` : loading ? '正在取得中央氣象署最新預報…' : '目前無法取得官方天氣資料。'}</p>
+        <p>最新可用預報，非現場觀測或指定旅遊日期預報。</p>
+        {(error || weather?.stale) && <p className="mt-1 text-[#92400E]">{weather ? '更新暫時失敗，顯示上次成功取得的預報。' : '請稍後重試。'}<button type="button" disabled={loading} onClick={() => setRetry((value) => value + 1)} className="inline-flex min-h-11 items-center px-3 font-semibold underline disabled:opacity-50">重新取得</button></p>}
       </div>
     </section>
   );
