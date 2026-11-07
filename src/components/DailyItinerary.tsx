@@ -57,15 +57,12 @@ export const DailyItinerary: React.FC = () => {
   const renderExpandSwitch = () => (
     <button
       type="button"
-      role="switch"
-      aria-checked={allExpanded}
-      aria-label="展開全部行程說明"
+      aria-expanded={allExpanded}
+      aria-label={allExpanded ? '收起全部行程說明' : '展開全部行程說明'}
       onClick={() => setExpandedIds(allExpanded ? new Set() : new Set(detailIds))}
       className="inline-flex h-12 w-14 shrink-0 items-center justify-center rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7D6895]"
     >
-      <span aria-hidden="true" className={`relative inline-flex h-7 w-12 items-center rounded-full border transition-colors ${allExpanded ? 'bg-[#7D6895] border-[#7D6895]' : 'bg-[#EDE4F3] border-[#D8C6E5]'}`}>
-        <span className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${allExpanded ? 'translate-x-6' : 'translate-x-0.5'}`} />
-      </span>
+      {allExpanded ? <ChevronUp aria-hidden="true" className="h-6 w-6 text-[#6E4B8B]" /> : <ChevronDown aria-hidden="true" className="h-6 w-6 text-[#6E4B8B]" />}
     </button>
   );
 

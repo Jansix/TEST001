@@ -40,12 +40,13 @@ export const WeatherWidget: React.FC = () => {
     return () => { active = false; controller.abort(); window.clearTimeout(timeout); };
   }, [retry]);
   const formatTime = (value: string) => new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(value));
+  const usingEstimate = !weather && error;
   const locations = WEATHER_FORECAST.map((metadata, index) => ({
     ...metadata,
     temp: '—' as number | string, tempMin: '—' as number | string, tempMax: '—' as number | string,
     condition: loading ? '正在取得官方預報' : '暫時無法取得預報', rainProb: '—', humidity: '—', wind: '—', uvIndex: '未提供',
     clothingTip: '山區天候多變，請備妥雨具及保暖衣物。',
-    ...weather?.locations[index],
+    ...(usingEstimate ? metadata : weather?.locations[index]),
   }));
   const [selectedLocation, setSelectedLocation] = useState<number>(0);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -137,6 +138,7 @@ export const WeatherWidget: React.FC = () => {
                 <span className="absolute bottom-3 left-5 text-[10px] tracking-[0.25em] text-white/90">{['MOUNTAIN MIST', 'FOREST RAILWAY', 'ART & CULTURE'][index]}</span>
               </div>
               <div className="p-5 sm:p-8">
+              {usingEstimate && <span className="mb-3 inline-flex rounded-full border border-[#D8BB87] bg-[#FFF8EA] px-2.5 py-1 text-[11px] text-[#875D2B]">預估參考・非即時資訊</span>}
               <div className="flex items-center justify-between gap-2 text-xs text-[#735A8B]">
                 <span>{current.elevation}</span>
 
@@ -149,7 +151,7 @@ export const WeatherWidget: React.FC = () => {
                 <div className="min-w-0 text-right">
                   <p className="text-sm sm:text-base font-semibold text-[#3A2052] break-words">{current.condition}</p>
                   <p className="mt-1 text-xs text-[#735A8B]">{current.tempMin}° ~ {current.tempMax}°</p>
-                  <p className="text-[11px] text-[#735A8B]">未來 24 小時</p>
+                  <p className="text-[11px] text-[#735A8B]">{usingEstimate ? '預估溫度範圍' : '未來 24 小時'}</p>
                 </div>
               </div>
 
@@ -169,7 +171,7 @@ export const WeatherWidget: React.FC = () => {
               <div className="flex items-start gap-2 mt-4 text-sm leading-relaxed text-[#5B466F]">
                 <ShieldCheck className="h-4 w-4 shrink-0 mt-1" /><p>{current.clothingTip}</p>
               </div>
-              {index === 1 && <p className="mt-3 rounded-lg bg-white/60 p-2.5 text-xs leading-relaxed text-[#78582F]">採竹崎鄉區域預報，非奮起湖現場溫度，山區氣溫可能不同。</p>}
+              {index === 1 && weather && <p className="mt-3 rounded-lg bg-white/60 p-2.5 text-xs leading-relaxed text-[#78582F]">採竹崎鄉區域預報，非奮起湖現場溫度，山區氣溫可能不同。</p>}
 
               {weather?.locations[index] && <details onToggle={() => setDetailsOpen(Boolean(carouselRef.current?.querySelector('details[open]')))} className="mt-4 border-t border-[#DDCCE8] pt-1 text-xs text-[#735A8B]">
                 <summary className="cursor-pointer min-h-11 flex items-center justify-between gap-2"><span>預報地點與時段</span><ChevronDown className="h-4 w-4" /></summary>
@@ -196,9 +198,9 @@ export const WeatherWidget: React.FC = () => {
         {!reducedMotion && <button type="button" aria-label={autoPlay ? '暫停自動輪播' : '啟動自動輪播'} aria-pressed={autoPlay} onClick={() => setAutoPlay((value) => !value)} className="flex h-11 w-11 items-center justify-center rounded-full text-[#735A8B] focus-visible:outline-2 focus-visible:outline-[#7D6895]">{autoPlay ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</button>}
       </div>
       <div className="text-xs leading-relaxed text-[#735A8B] px-5 sm:px-7" aria-live="polite">
-        <p>{weather ? `中央氣象署 · 更新 ${formatTime(weather.fetchedAt)}` : loading ? '正在取得中央氣象署最新預報…' : '目前無法取得官方天氣資料。'}</p>
-        <p>最新可用預報，非現場觀測或指定旅遊日期預報。</p>
-        {(error || weather?.stale) && <p className="mt-1 text-[#92400E]">{weather ? '更新暫時失敗，顯示上次成功取得的預報。' : '請稍後重試。'}<button type="button" disabled={loading} onClick={() => setRetry((value) => value + 1)} className="inline-flex min-h-11 items-center px-3 font-semibold underline disabled:opacity-50">重新取得</button></p>}
+        <p>{weather ? `中央氣象署 · 更新 ${formatTime(weather.fetchedAt)}` : loading ? '正在取得中央氣象署最新預報…' : '預估參考天氣・非即時資訊'}</p>
+        {usingEstimate && <p>官方資料暫時無法取得，以下為預估參考資訊，非即時預報，實際天候以現場為準。</p>}
+        {(error || weather?.stale) && <p className="mt-1 text-[#92400E]">{weather ? '更新暫時失敗，顯示上次成功取得的預報。' : '可稍後重新取得官方預報。'}<button type="button" disabled={loading} onClick={() => setRetry((value) => value + 1)} className="inline-flex min-h-11 items-center px-3 font-semibold underline disabled:opacity-50">重新取得</button></p>}
       </div>
     </section>
   );

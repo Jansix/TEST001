@@ -34,3 +34,8 @@ Responses are cached for 15 minutes. A warm function can serve a marked stale
 response for up to 6 hours on upstream failure; cold starts may have no fallback.
 Local Vite alone does not run Vercel Functions; use Vercel preview deployments
 (or Vercel CLI development) to exercise the complete route.
+
+If no successful official response exists and the API fails, the client displays
+the original static trip weather estimates with a visible non-live reference badge
+on every card. These estimates have no official update time or forecast period.
+A previous successful response remains preferred over static estimates on retry failure.
