@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { WEATHER_FORECAST } from '../data/tourData';
 import { MapleLeaf, StarSparkle } from './MapleLeafStars';
 import {
@@ -66,48 +66,63 @@ export const WeatherWidget: React.FC = () => {
     if (carouselRef.current) observer.observe(carouselRef.current);
     return () => { observer.disconnect(); query.removeEventListener('change', updateMotion); document.removeEventListener('visibilitychange', updateVisibility); };
   }, []);
-  const wrap = (index: number) => (index + WEATHER_FORECAST.length) % WEATHER_FORECAST.length;
-  const loopResetTimer = useRef<number | undefined>(undefined);
-  const activeIndexRef = useRef(selectedLocation);
-  activeIndexRef.current = selectedLocation;
-  useLayoutEffect(() => {
-    const container = carouselRef.current;
-    if (!container) return;
-    let width = container.clientWidth;
-    container.scrollTo({left: width, behavior: 'instant'});
-    const observer = new ResizeObserver(() => {
-      if (container.clientWidth !== width) {
-        width = container.clientWidth;
-        container.scrollTo({left: (activeIndexRef.current + 1) * width, behavior: 'instant'});
-      }
-    });
-    observer.observe(container);
-    return () => { observer.disconnect(); window.clearTimeout(loopResetTimer.current); };
+  const activeCardRef = useRef<HTMLElement>(null);
+  const busyRef = useRef(false);
+  const dragRef = useRef({x: 0, angle: 0});
+  const [drag, setDrag] = useState({x: 0, angle: 0});
+  const animationRef = useRef<Animation | null>(null);
+  const alive = useRef(true);
+  const firstCard = useRef(true);
+  const gesture = useRef<{id: number; x: number; y: number; horizontal: boolean} | null>(null);
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; animationRef.current?.cancel(); };
   }, []);
-  const [dragTilt, setDragTilt] = useState({ index: -1, angle: 0 });
-  const gesture = useRef<{id: number; x: number; y: number; horizontal: boolean; scroll: number; index: number} | null>(null);
-  const goToLocation = useCallback((index: number, manual = true) => {
-    if (manual) setAutoPlay(false);
-    const container = carouselRef.current;
-    if (!container) return;
-    let next = index;
-    let current = Math.round(container.scrollLeft / container.clientWidth) - 1;
-    if (current === -1 || current === WEATHER_FORECAST.length) {
-      current = (current + WEATHER_FORECAST.length) % WEATHER_FORECAST.length;
-      container.scrollTo({left: (current + 1) * container.clientWidth, behavior: 'instant'});
-    }
-    if (next - current > 1) next -= WEATHER_FORECAST.length;
-    else if (current - next > 1) next += WEATHER_FORECAST.length;
-    next = Math.max(-1, Math.min(WEATHER_FORECAST.length, next));
-    container.scrollTo({ left: (next + 1) * container.clientWidth, behavior: reducedMotion ? 'instant' : 'smooth' });
+  useEffect(() => {
+    if (firstCard.current) { firstCard.current = false; return; }
+    if (reducedMotion) return;
+    animationRef.current = activeCardRef.current?.animate([
+      {transform: 'translateY(14px) scale(.96)', opacity: .4},
+      {transform: 'translateY(0) scale(1)', opacity: 1},
+    ], {duration: 300, easing: 'cubic-bezier(.2,.7,.3,1)'}) ?? null;
+  }, [selectedLocation, reducedMotion]);
+  const resetDrag = useCallback(() => {
+    const previous = dragRef.current;
+    dragRef.current = {x: 0, angle: 0};
+    setDrag({x: 0, angle: 0});
+    if (!reducedMotion) animationRef.current = activeCardRef.current?.animate([
+      {transform: `translateX(${previous.x}px) rotate(${previous.angle}deg)`},
+      {transform: 'translateX(0) rotate(0)'},
+    ], {duration: 240, easing: 'ease-out'}) ?? null;
   }, [reducedMotion]);
+  const goToLocation = useCallback(async (index: number, manual = true) => {
+    if (manual) setAutoPlay(false);
+    if (busyRef.current) return;
+    const next = (index + WEATHER_FORECAST.length) % WEATHER_FORECAST.length;
+    if (next === selectedLocation) { resetDrag(); return; }
+    busyRef.current = true;
+    animationRef.current?.cancel();
+    const direction = dragRef.current.x ? Math.sign(dragRef.current.x) : index > selectedLocation ? -1 : 1;
+    const distance = Math.max(window.innerWidth, carouselRef.current?.clientWidth ?? 0) + 200;
+    if (!reducedMotion && activeCardRef.current) {
+      const animation = activeCardRef.current.animate([
+        {transform: `translateX(${dragRef.current.x}px) rotate(${dragRef.current.angle}deg)`, opacity: 1},
+        {transform: `translate(${direction * distance}px, 65px) rotate(${direction * 38}deg)`, opacity: 0},
+      ], {duration: 340, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards'});
+      animationRef.current = animation;
+      try { await animation.finished; } catch { busyRef.current = false; return; }
+    }
+    if (!alive.current) return;
+    dragRef.current = {x: 0, angle: 0};
+    setDrag({x: 0, angle: 0});
+    setSelectedLocation(next);
+    busyRef.current = false;
+  }, [selectedLocation, reducedMotion, resetDrag]);
   const dragHandlers = {
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => {
-      if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
-      const container = carouselRef.current;
-      if (!container) return;
-      container.scrollTo({left: container.scrollLeft, behavior: 'instant'});
-      gesture.current = {id: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false, scroll: container.scrollLeft, index: Math.round(container.scrollLeft / container.clientWidth) - 1};
+      if (busyRef.current || !event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      animationRef.current?.cancel();
+      gesture.current = {id: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false};
       event.currentTarget.setPointerCapture(event.pointerId);
       setInteracting(true);
     },
@@ -118,38 +133,28 @@ export const WeatherWidget: React.FC = () => {
       const dy = event.clientY - start.y;
       if (!start.horizontal && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
         gesture.current = null;
-        setDragTilt({index: -1, angle: 0});
         setInteracting(false);
-        goToLocation(start.index, false);
+        resetDrag();
         return;
       }
-      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
-        start.horizontal = true;
-        setAutoPlay(false);
-      }
-      if (start.horizontal && carouselRef.current) {
-        carouselRef.current.scrollLeft = start.scroll - dx;
-        if (!reducedMotion) setDragTilt({index: wrap(start.index), angle: Math.max(-5, Math.min(5, dx / 38))});
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) { start.horizontal = true; setAutoPlay(false); }
+      if (start.horizontal) {
+        const angle = reducedMotion ? 0 : Math.max(-28, Math.min(28, dx / Math.max(7, event.currentTarget.clientWidth / 30)));
+        dragRef.current = {x: dx, angle};
+        setDrag({x: dx, angle});
       }
     },
     onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => {
       const start = gesture.current;
       gesture.current = null;
-      setDragTilt({index: -1, angle: 0});
       setInteracting(false);
       if (!start || start.id !== event.pointerId) return;
       const dx = event.clientX - start.x;
-      if (start.horizontal && Math.abs(dx) >= Math.min(72, event.currentTarget.clientWidth * .22)) {
-        goToLocation(start.index + (dx < 0 ? 1 : -1));
-      } else goToLocation(start.index, false);
+      if (start.horizontal && Math.abs(dx) >= Math.min(80, event.currentTarget.clientWidth * .22)) {
+        void goToLocation(selectedLocation + (dx < 0 ? 1 : -1));
+      } else resetDrag();
     },
-    onPointerCancel: () => {
-      const start = gesture.current;
-      gesture.current = null;
-      setDragTilt({index: -1, angle: 0});
-      setInteracting(false);
-      if (start) goToLocation(start.index, false);
-    },
+    onPointerCancel: () => { gesture.current = null; setInteracting(false); resetDrag(); },
   };
   useEffect(() => {
     if (!autoPlay || interacting || focused || !visible || !pageVisible || reducedMotion) return;
@@ -196,27 +201,13 @@ export const WeatherWidget: React.FC = () => {
               goToLocation(selectedLocation + (event.key === 'ArrowRight' ? 1 : -1));
             }
           }}
-          onScroll={() => {
-            const container = carouselRef.current;
-            if (!container) return;
-            const position = Math.round(container.scrollLeft / container.clientWidth);
-            setSelectedLocation(wrap(position - 1));
-            window.clearTimeout(loopResetTimer.current);
-            loopResetTimer.current = window.setTimeout(() => {
-              if (gesture.current) return;
-              const at = Math.round(container.scrollLeft / container.clientWidth);
-              if (at === 0 || at === WEATHER_FORECAST.length + 1) {
-                container.scrollTo({left: (at === 0 ? WEATHER_FORECAST.length : 1) * container.clientWidth, behavior: 'instant'});
-              }
-            }, 140);
-          }}
-          className="relative z-[3] flex overflow-hidden rounded-3xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
+          className="relative z-[3] rounded-3xl focus-visible:outline-2 focus-visible:outline-[#7D6895]"
 
         >
-          {[locations[locations.length - 1], ...locations, locations[0]].map((current, slideIndex) => {
-            const index = wrap(slideIndex - 1);
+          {locations.map((current, index) => {
+            if (index !== selectedLocation) return null;
             return (
-            <article style={{transform: `rotate(${dragTilt.index === index ? dragTilt.angle : 0}deg)`, transformOrigin: '50% 90%', transition: dragTilt.index === index ? 'none' : 'transform 280ms ease'}} aria-hidden={index !== selectedLocation || slideIndex === 0 || slideIndex === locations.length + 1} key={slideIndex} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="relative min-w-0 basis-full shrink-0 rounded-3xl shadow-[0_12px_32px_rgba(70,40,90,0.10)] border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
+            <article ref={activeCardRef} style={{transform: `translateX(${drag.x}px) rotate(${drag.angle}deg)`, transformOrigin: '50% 85%'}} key={index} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="relative min-w-0 basis-full shrink-0 rounded-3xl shadow-[0_12px_32px_rgba(70,40,90,0.10)] border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
               <div {...dragHandlers} style={{touchAction: 'pan-y'}} className="cursor-grab active:cursor-grabbing select-none">
               <div className="relative h-32 sm:h-44 overflow-hidden bg-[#D9CCE4]">
                 <img src={['/images/hero_sunrise.jpg', '/images/fenqihu.jpg', '/images/npm_south.jpg'][index]} alt={['阿里山日出與層疊山巒', '奮起湖山城風景', '故宮南院建築風景'][index]} loading="lazy" draggable={false} className="h-full w-full object-cover select-none" />
