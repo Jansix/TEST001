@@ -212,3 +212,17 @@ header a:active {
   .weather-postcard-back-1 { transform: translateY(-7px) scale(.96); }
   .weather-postcard-back-2 { transform: translateY(-14px) scale(.91); }
 }
+
+.site-glass-header {
+  background-color: rgba(252, 249, 253, .48);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  backdrop-filter: blur(18px) saturate(135%);
+}
+.site-glass-header.is-scrolled { background-color: rgba(252, 249, 253, .67); }
+.nav-gold-line { background: linear-gradient(90deg, transparent, #b18b55 30%, #d6b983 70%, transparent); }
+@media (hover: hover) {
+  .section-nav-link:hover { background-color: #ffffff35; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-glass-header, .site-glass-header.is-scrolled { background-color: rgba(252, 249, 253, .93); }
+}
