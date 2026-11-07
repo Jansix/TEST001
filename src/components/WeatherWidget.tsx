@@ -11,7 +11,6 @@ import {
   Mountain,
   TrainFront,
   Landmark,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -53,7 +52,6 @@ export const WeatherWidget: React.FC = () => {
   const [autoPlay, setAutoPlay] = useState(true);
   const [interacting, setInteracting] = useState(false);
   const [focused, setFocused] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [pageVisible, setPageVisible] = useState(!document.hidden);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -78,10 +76,10 @@ export const WeatherWidget: React.FC = () => {
     });
   }, []);
   useEffect(() => {
-    if (!autoPlay || interacting || focused || detailsOpen || !visible || !pageVisible || reducedMotion) return;
+    if (!autoPlay || interacting || focused || !visible || !pageVisible || reducedMotion) return;
     const timer = window.setTimeout(() => goToLocation((selectedLocation + 1) % WEATHER_FORECAST.length), 6000);
     return () => window.clearTimeout(timer);
-  }, [autoPlay, interacting, focused, detailsOpen, visible, pageVisible, reducedMotion, selectedLocation, goToLocation]);
+  }, [autoPlay, interacting, focused, visible, pageVisible, reducedMotion, selectedLocation, goToLocation]);
 
   return (
     <section id="weather" className="max-w-5xl mx-auto px-4 sm:px-6 mt-10">
@@ -173,14 +171,13 @@ export const WeatherWidget: React.FC = () => {
               </div>
               {index === 1 && weather && <p className="mt-3 rounded-lg bg-white/60 p-2.5 text-xs leading-relaxed text-[#78582F]">採竹崎鄉區域預報，非奮起湖現場溫度，山區氣溫可能不同。</p>}
 
-              {weather?.locations[index] && <details onToggle={() => setDetailsOpen(Boolean(carouselRef.current?.querySelector('details[open]')))} className="mt-4 border-t border-[#DDCCE8] pt-1 text-xs text-[#735A8B]">
-                <summary className="cursor-pointer min-h-11 flex items-center justify-between gap-2"><span>預報地點與時段</span><ChevronDown className="h-4 w-4" /></summary>
+              {weather?.locations[index] && <div className="mt-4 border-t border-[#DDCCE8] pt-3 text-xs text-[#735A8B]">
                 <div className="pb-2 space-y-1 leading-relaxed">
                   <p>預報地點：{weather.locations[index].forecastLocation}</p>
                   <p>{formatTime(weather.locations[index].validFrom)}～{formatTime(weather.locations[index].validTo)}</p>
                   <p>溫度時點：{formatTime(weather.locations[index].temperatureTime)}</p>
                 </div>
-              </details>}
+              </div>}
               </div>
             </article>
           ))}
