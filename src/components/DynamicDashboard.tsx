@@ -6,7 +6,6 @@ import {
   Clock,
   Navigation,
   ArrowRight,
-  Luggage,
   HeartHandshake,
   CalendarCheck,
   MapPin,
@@ -94,9 +93,21 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
         <div className="p-6 sm:p-8 lg:p-10 bg-gradient-to-b from-white to-[#FCF9FD]">
           {/* STATE 1: BEFORE TRIP (< 11/14 06:40) */}
           {tripStatus === 'BEFORE' && (
-            <div className="text-center py-4 sm:py-6 max-w-2xl mx-auto animate-in fade-in duration-300">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#F6EEFA] border border-[#EADEF2] text-[#6A4788] mb-5 shadow-xs">
-                <Luggage className="w-8 h-8 text-[#6A4788]" />
+            <div className="text-center max-w-3xl mx-auto animate-in fade-in duration-300">
+              <div className="relative h-48 sm:h-64 rounded-2xl overflow-hidden mb-6 bg-[#493457] text-white text-left">
+                <img src="/images/forest_train.jpg" alt="阿里山森林鐵道與山林景色" className="absolute inset-0 h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#241632]/85 via-[#352247]/50 to-transparent" />
+                <div className="relative h-full flex flex-col justify-between p-5 sm:p-7">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[10px] tracking-[0.25em] text-[#F2DEBD]">YOUR AUTUMN JOURNEY</span>
+                    <span className="text-[10px] border border-white/30 rounded-full px-2.5 py-1 bg-white/10 backdrop-blur-sm">兩天一夜</span>
+                  </div>
+                  <div>
+                    <p className="text-3xl sm:text-4xl font-serif-tc tracking-wide">把日常，留在山下。</p>
+                    <p className="mt-2 text-xs sm:text-sm text-white/80">森林鐵道・百年賓館・秋日晨光</p>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs tracking-wider text-[#F2DEBD]"><span>2026</span><span className="h-px w-6 bg-[#F2DEBD]/50" /><span>11.14 — 11.15</span><MapleLeaf size={16} color="gold" /></div>
+                </div>
               </div>
 
               {/* Required Main Text: 行程即將開始 */}
@@ -110,7 +121,7 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
               </p>
 
               {/* Departure Countdown Banner */}
-              <div className="bg-gradient-to-br from-[#FAF3FC] via-white to-[#F8F0FA] rounded-2xl border border-[#E2D2ED] p-5 sm:p-6 mb-8 shadow-xs">
+              <div className="bg-gradient-to-br from-[#FAF3FC] via-white to-[#F8F0FA] rounded-2xl border border-[#E2D2ED] p-4 sm:p-6 mb-6 shadow-xs">
                 <div className="text-xs font-semibold text-[#6E4B8B] tracking-wider uppercase mb-3 flex items-center justify-center gap-2">
                   <StarSparkle size={12} color="#D97706" />
                   <span>距離出發倒數計時</span>
@@ -143,18 +154,18 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="mt-4 text-xs text-[#6A4E7E] flex items-center justify-center gap-2">
-                  <MapleLeaf size={14} color="amber" />
-                  <span>首發班車：2026/11/14 06:40 台北出發 · 07:30 台中出發</span>
+                <div className="mt-5 pt-4 border-t border-dashed border-[#D8C6E5] grid grid-cols-2 divide-x divide-[#E2D2ED] text-left text-xs text-[#6A4E7E]">
+                  <div className="px-2 sm:px-4"><p className="text-[10px] tracking-widest text-[#8B719C]">A 車 · 台北出發</p><p className="mt-1 font-mono text-lg font-semibold text-[#432B57]">06:40</p></div>
+                  <div className="px-3 sm:px-4"><p className="text-[10px] tracking-widest text-[#8B719C]">B 車 · 台中出發</p><p className="mt-1 font-mono text-lg font-semibold text-[#432B57]">07:30</p></div>
                 </div>
               </div>
 
               {/* View Full Schedule Button */}
               <button
                 onClick={onSwitchToItinerary}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-[#482D5E] bg-[#EFE6F6] hover:bg-[#E6DBF0] border border-[#DECFEC] active:scale-[0.98] transition-all shadow-xs"
+                className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-semibold text-white bg-[#6E4B8B] hover:bg-[#553870] active:scale-[0.98] transition-all shadow-sm"
               >
-                <CalendarCheck className="w-4 h-4 text-[#6A4788]" />
+                <CalendarCheck className="w-4 h-4 text-[#E9D5FF]" />
                 <span>提前查閱完整行程表</span>
               </button>
             </div>

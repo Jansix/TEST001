@@ -66,8 +66,14 @@ export const TravelInfo: React.FC = () => {
       {/* SUB-SECTION 2: 飯店資訊 (阿里山賓館) */}
       <details  className="group/info mb-4 rounded-2xl border border-[#E2D2ED] bg-white/70 overflow-hidden">
         <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-4 sm:px-6 py-4 text-base font-semibold text-[#3A2052] hover:bg-[#F4ECF8] focus-visible:outline-2 focus-visible:outline-[#7D6895] [&::-webkit-details-marker]:hidden">
-          <Hotel className="h-5 w-5 text-[#7E579B] shrink-0" />
-          <span className="flex-1">飯店資訊</span>
+          <img src={HOTEL_INFO.image} alt="" loading="lazy" className="h-20 w-24 sm:h-24 sm:w-36 rounded-xl object-cover shrink-0" />
+          <span className="flex-1 min-w-0">
+            <span className="block text-[10px] tracking-widest font-normal text-[#8B719C]">STAY · 山中一泊</span>
+            <span className="block mt-1 font-serif-tc">阿里山賓館</span>
+            <span className="block mt-1 text-xs font-normal text-[#735A8B] leading-relaxed">百年歷史・高山住宿</span>
+            <span className="block mt-2 text-xs text-[#6E4B8B] group-open/info:hidden">查看飯店介紹 →</span>
+            <span className="hidden mt-2 text-xs text-[#6E4B8B] group-open/info:block">收起飯店介紹</span>
+          </span>
           <Plus className="h-5 w-5 group-open/info:hidden" />
           <Minus className="hidden h-5 w-5 group-open/info:block" />
         </summary>
@@ -117,8 +123,17 @@ export const TravelInfo: React.FC = () => {
       {/* SUB-SECTION 3: 景點介紹 (阿里山小火車/奮起湖、玉山觀日、故宮南院等) */}
       <details  className="group/info mb-4 rounded-2xl border border-[#E2D2ED] bg-white/70 overflow-hidden">
         <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-4 sm:px-6 py-4 text-base font-semibold text-[#3A2052] hover:bg-[#F4ECF8] focus-visible:outline-2 focus-visible:outline-[#7D6895] [&::-webkit-details-marker]:hidden">
-          <Compass className="h-5 w-5 text-[#7E579B] shrink-0" />
-          <span className="flex-1">景點介紹</span>
+          <span className="relative h-20 w-24 sm:h-24 sm:w-36 rounded-xl overflow-hidden shrink-0">
+            <img src="/images/hero_sunrise.jpg" alt="" loading="lazy" className="h-full w-full object-cover" />
+            <span className="absolute bottom-0 inset-x-0 h-7 bg-gradient-to-t from-[#351D4A]/60 to-transparent" />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[10px] tracking-widest font-normal text-[#8B719C]">EXPLORE · 秋日漫遊</span>
+            <span className="block mt-1 font-serif-tc">旅途中的風景</span>
+            <span className="block mt-1 text-xs font-normal text-[#735A8B] leading-relaxed">山城老街・日出・故宮南院</span>
+            <span className="block mt-2 text-xs text-[#6E4B8B] group-open/info:hidden">探索景點介紹 →</span>
+            <span className="hidden mt-2 text-xs text-[#6E4B8B] group-open/info:block">收起景點介紹</span>
+          </span>
           <Plus className="h-5 w-5 group-open/info:hidden" />
           <Minus className="hidden h-5 w-5 group-open/info:block" />
         </summary>
