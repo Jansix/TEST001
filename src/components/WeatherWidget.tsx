@@ -66,6 +66,7 @@ export const WeatherWidget: React.FC = () => {
     if (carouselRef.current) observer.observe(carouselRef.current);
     return () => { observer.disconnect(); query.removeEventListener('change', updateMotion); document.removeEventListener('visibilitychange', updateVisibility); };
   }, []);
+  const [pendingTarget, setPendingTarget] = useState<number | null>(null);
   const activeCardRef = useRef<HTMLElement>(null);
   const busyRef = useRef(false);
   const dragRef = useRef({x: 0, angle: 0});
@@ -87,6 +88,7 @@ export const WeatherWidget: React.FC = () => {
     ], {duration: 300, easing: 'cubic-bezier(.2,.7,.3,1)'}) ?? null;
   }, [selectedLocation, reducedMotion]);
   const resetDrag = useCallback(() => {
+    setPendingTarget(null);
     const previous = dragRef.current;
     dragRef.current = {x: 0, angle: 0};
     setDrag({x: 0, angle: 0});
@@ -101,6 +103,7 @@ export const WeatherWidget: React.FC = () => {
     const next = (index + WEATHER_FORECAST.length) % WEATHER_FORECAST.length;
     if (next === selectedLocation) { resetDrag(); return; }
     busyRef.current = true;
+    setPendingTarget(next);
     animationRef.current?.cancel();
     const direction = dragRef.current.x ? Math.sign(dragRef.current.x) : index > selectedLocation ? -1 : 1;
     const distance = Math.max(window.innerWidth, carouselRef.current?.clientWidth ?? 0) + 200;
@@ -111,11 +114,13 @@ export const WeatherWidget: React.FC = () => {
       ], {duration: 340, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards'});
       animationRef.current = animation;
       try { await animation.finished; } catch { busyRef.current = false; return; }
+      animation.cancel();
     }
     if (!alive.current) return;
     dragRef.current = {x: 0, angle: 0};
     setDrag({x: 0, angle: 0});
     setSelectedLocation(next);
+    setPendingTarget(null);
     busyRef.current = false;
   }, [selectedLocation, reducedMotion, resetDrag]);
   const dragHandlers = {
@@ -139,6 +144,7 @@ export const WeatherWidget: React.FC = () => {
       }
       if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) { start.horizontal = true; setAutoPlay(false); }
       if (start.horizontal) {
+        setPendingTarget((selectedLocation + (dx < 0 ? 1 : -1) + WEATHER_FORECAST.length) % WEATHER_FORECAST.length);
         const angle = reducedMotion ? 0 : Math.max(-28, Math.min(28, dx / Math.max(7, event.currentTarget.clientWidth / 30)));
         dragRef.current = {x: dx, angle};
         setDrag({x: dx, angle});
@@ -183,12 +189,6 @@ export const WeatherWidget: React.FC = () => {
           <ChevronLeft className="h-5 w-5" />
         </button>
         <div className="relative min-w-0 weather-postcard-deck">
-          {[1, 2].map((depth) => {
-            const next = (selectedLocation + depth) % locations.length;
-            return <div key={depth} aria-hidden="true" className={`weather-postcard-back weather-postcard-back-${depth}`}>
-              <img src={['/images/hero_sunrise.jpg', '/images/fenqihu.jpg', '/images/npm_south.jpg'][next]} alt="" draggable={false} className="h-full w-full object-cover opacity-40" />
-            </div>;
-          })}
         <div
           ref={carouselRef}
           role="region"
@@ -205,9 +205,16 @@ export const WeatherWidget: React.FC = () => {
 
         >
           {locations.map((current, index) => {
-            if (index !== selectedLocation) return null;
+            const active = index === selectedLocation;
+            const depth = active ? 0 : index === (pendingTarget ?? (selectedLocation + 1) % locations.length) ? 1 : 2;
             return (
-            <article ref={activeCardRef} style={{transform: `translateX(${drag.x}px) rotate(${drag.angle}deg)`, transformOrigin: '50% 85%'}} key={index} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="relative min-w-0 basis-full shrink-0 rounded-3xl shadow-[0_12px_32px_rgba(70,40,90,0.10)] border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
+            <article ref={active ? activeCardRef : undefined} aria-hidden={!active} inert={!active} style={{
+              position: active ? 'relative' : 'absolute', inset: active ? undefined : 0,
+              zIndex: 3 - depth,
+              transform: active ? `translateX(${drag.x}px) rotate(${drag.angle}deg)` : `translateY(${-depth * 9}px) scale(${1 - depth * .04}) rotate(${reducedMotion ? 0 : depth === 1 ? -1 : 1.5}deg)`,
+              transformOrigin: active ? '50% 85%' : '50% 0',
+              pointerEvents: active ? 'auto' : 'none',
+            }} key={index} role="group" aria-roledescription="投影片" aria-label={`${index + 1} / ${locations.length}：${current.location}`} className="min-w-0 rounded-3xl shadow-[0_12px_32px_rgba(70,40,90,0.10)] border border-[#E2D2ED] bg-gradient-to-br from-[#FAF3FC] via-[#F4EAF9] to-[#EDE0F6] overflow-hidden">
               <div {...dragHandlers} style={{touchAction: 'pan-y'}} className="cursor-grab active:cursor-grabbing select-none">
               <div className="relative h-32 sm:h-44 overflow-hidden bg-[#D9CCE4]">
                 <img src={['/images/hero_sunrise.jpg', '/images/fenqihu.jpg', '/images/npm_south.jpg'][index]} alt={['阿里山日出與層疊山巒', '奮起湖山城風景', '故宮南院建築風景'][index]} loading="lazy" draggable={false} className="h-full w-full object-cover select-none" />
